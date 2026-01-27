@@ -12,6 +12,8 @@ import edu.unl.csce466.ExampleMod;
 public class ImGuiScreen extends Screen{
 	
 	private static ImGuiScreen _INSTANCE = null;
+
+	boolean _buttonClicked = false;
 	
 	public static ImGuiScreen getInstance() {
 		if(_INSTANCE == null) { _INSTANCE = new ImGuiScreen(); }
@@ -29,6 +31,19 @@ public class ImGuiScreen extends Screen{
 		ImGuiRenderer.getInstance().draw(()->{
 			//ImGui.showDemoWindow();
 			ShowModMenu();
+		});
+		
+		ImGuiRenderer.getInstance().draw(() -> {
+			ImGui.begin("Custom Window");
+				ImGui.text("Example WIndow");
+				if(ImGui.button("Click Me!")) {
+					_buttonClicked = true;
+				}
+				
+				if(_buttonClicked) {
+					ImGui.text("Button has been clicked!");
+				}
+			ImGui.end();
 		});
 	}
 
