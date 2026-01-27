@@ -36,7 +36,58 @@ public class ImGuiRenderer {
 		ImGui.createContext();
 		config.execute();
 		imGuiGlfw.init(Minecraft.getInstance().getWindow().getWindow(), false);
-		imGuiGl.init("#version 410 core");
+		
+		try{
+			initGl3Renderer("#version 410 core");
+			return;
+		}catch(Exception e){
+			// Fall through
+		}
+
+		try{
+			initGl3Renderer("#version 150 core");
+			return;
+		}catch (Exception e) {
+		
+		}
+
+		throw new RuntimeException("Failed to initialize ImGuiImplGl3");
+	}
+
+	private void initGl3Renderer(String glslVersion) {
+		try {
+			try {
+				imGuiGl.getClass().getMethod("init", String.class).invoke(imGuiGl, glslVersion);
+				return;
+			} catch (NoSuchMethodException ignored) {
+				// Fall through to other signatures.
+			}
+			try {
+				imGuiGl.getClass().getMethod("init").invoke(imGuiGl);
+				return;
+			} catch (NoSuchMethodException ignored) {
+				// Fall through to other signatures.
+			}
+			try {
+				imGuiGl.getClass().getMethod("init", String.class, boolean.class).invoke(imGuiGl, glslVersion, false);
+				return;
+			} catch (NoSuchMethodException ignored) {
+				// No supported init method found.
+			}
+			throw new IllegalStateException("Unsupported ImGuiImplGl3 API: no compatible init() method found");
+		} catch (ReflectiveOperationException e) {
+			throw new RuntimeException("Failed to initialize ImGuiImplGl3 via reflection", e);
+		}
+	}
+	
+	private void newFrameGl3Renderer() {
+		try {
+			imGuiGl.getClass().getMethod("newFrame").invoke(imGuiGl);
+		} catch (NoSuchMethodException ignored) {
+			// Older imgui-java versions don't require a GL3 newFrame call.
+		} catch (ReflectiveOperationException e) {
+			throw new RuntimeException("Failed to call ImGuiImplGl3.newFrame() via reflection", e);
+		}
 	}
 	
 	public void preDraw(ImGuiCall drawCall) {
@@ -54,6 +105,7 @@ public class ImGuiRenderer {
 		_preDrawCalls.clear();
 		
 		imGuiGlfw.newFrame();
+		newFrameGl3Renderer();
 		ImGui.newFrame();
 		
 		// Render ImGui Here
