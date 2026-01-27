@@ -15,12 +15,12 @@ import imgui.flag.ImGuiConfigFlags;
 @Mixin(RenderSystem.class)
 public abstract class RenderSystemMixin {
 	
-	@Inject( at = @At( value = "TAIL" ), method = "initRenderer(IZ)V" )
-	private static void initRenderer(int flags, boolean enable, CallbackInfo cbi) {
+	@Inject( at = @At( value = "TAIL" ), method = "initRenderer", remap = true )
+	private static void initRenderer(CallbackInfo cbi) {
 		RenderSystem.assertOnRenderThread();
 		LogUtils.getLogger().info("Initalizing ImGui");
 		ImGuiRenderer.getInstance().init(()->{
-			// ImGui.getIO().addConfigFlags(ImGuiConfigFlags.ViewportsEnable);
+			ImGui.getIO().addConfigFlags(ImGuiConfigFlags.ViewportsEnable);
 			ImGui.getIO().addConfigFlags(ImGuiConfigFlags.DockingEnable);
 		});
 	}
