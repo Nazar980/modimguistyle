@@ -222,7 +222,7 @@ dependencies {
 }
 
 mixin {
-	// add sourceSets.main, 'forge-mixin.refmap.json'
+	add sourceSets.main, 'forge-mixin.refmap.json'
 	config 'forge-mixin.json'
 
     debug.verbose = true
@@ -267,4 +267,15 @@ publishing {
 
 tasks.withType(JavaCompile).configureEach {
 	options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
+}
+
+tasks.withType(ProcessResources).configureEach {
+	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+tasks.named('processResources', ProcessResources).configure {
+	dependsOn tasks.named('compileJava')
+	from("$buildDir/tmp/compileJava/mixin.refmap.json") {
+		rename { 'forge-mixin.refmap.json' }
+	}
 }
