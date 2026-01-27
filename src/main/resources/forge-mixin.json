@@ -10,5 +10,5 @@
 	"injectors": {
 		"defaultRequire": 1
 	},
-	"refmap": "forge-mixin-refmap.json"
+	"refmap": "forge-mixin.refmap.json"
 }
