@@ -45,6 +45,19 @@ public class ImGuiScreen extends Screen{
 				}
 			ImGui.end();
 		});
+		
+		ImGuiRenderer.getInstance().draw(() -> {
+			ImGui.begin("Custom Window");
+				ImGui.text("Example WIndow");
+				if(ImGui.button("Click Me!")) {
+					_buttonClicked = true;
+				}
+				
+				if(_buttonClicked) {
+					ImGui.text("Button has been clicked!");
+				}
+			ImGui.end();
+		});
 	}
 
 	private void ShowModMenu()
