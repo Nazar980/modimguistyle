@@ -5,9 +5,13 @@ import edu.unl.csce466.event.ModEvents;
 import edu.unl.csce466.imgui.ImGuiRenderer;
 import edu.unl.csce466.screens.ImGuiScreen;
 import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockBehaviour;
@@ -15,12 +19,14 @@ import net.minecraft.world.level.material.Material;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.InputEvent;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.CreativeModeTabEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.items.ItemHandlerHelper;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
@@ -28,7 +34,6 @@ import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 
 @Mod(ExampleMod.MODID)
-@Mod.EventBusSubscriber(modid = ExampleMod.MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.MOD)
 public class ExampleMod {
 
     public static final String MODID = "examplemod";
@@ -49,13 +54,13 @@ public class ExampleMod {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
 
         modEventBus.addListener(this::commonSetup);
+        modEventBus.addListener(this::addCreative);  // ← добавляем событие для таба
+
         BLOCKS.register(modEventBus);
         ITEMS.register(modEventBus);
 
         MinecraftForge.EVENT_BUS.register(this);
         MinecraftForge.EVENT_BUS.register(IMGUI_SCREEN);
-
-        // Убрано: modEventBus.addListener(this::addCreative);
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
@@ -63,7 +68,11 @@ public class ExampleMod {
         LOGGER.info("DIRT BLOCK >> {}", ForgeRegistries.BLOCKS.getKey(Blocks.DIRT));
     }
 
-    // Удалить полностью метод addCreative и всё, что связано с CreativeModeTabEvent
+    private void addCreative(CreativeModeTabEvent.BuildContents event) {
+        if (event.getTabKey() == CreativeModeTabs.BUILDING_BLOCKS) {
+            event.accept(EXAMPLE_BLOCK_ITEM);
+        }
+    }
 
     @Mod.EventBusSubscriber(modid = MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
     public static class ClientModEvents {
@@ -71,7 +80,7 @@ public class ExampleMod {
         public static void onClientSetup(FMLClientSetupEvent event) {
             LOGGER.info("HELLO FROM CLIENT SETUP");
             LOGGER.info("MINECRAFT NAME >> {}", Minecraft.getInstance().getUser().getName());
-            IMGUI_SCREEN.init();  // было getInstance().init() — но init пустой, можно и так
+            IMGUI_SCREEN.init();
         }
     }
 
@@ -81,13 +90,46 @@ public class ExampleMod {
         if (Minecraft.getInstance().screen != null) return;
 
         if (event.getKey() == GLFW.GLFW_KEY_L) {
-            LOGGER.info("L pressed → opening ImGui screen");
+            LOGGER.info("L");
             Minecraft.getInstance().setScreen(IMGUI_SCREEN);
         }
     }
 
-    // Класс Zeus можно оставить без изменений
     public static class Zeus {
-        // ... (всё то же самое)
+        public void Init() {
+            System.out.println("Zeus Activated");
+            var player = Minecraft.getInstance().player;
+            if (player != null) {
+                player.sendSystemMessage(Component.literal("You feel a surge of electricity course through your veins..."));
+                ModEvents.ForgeEvents.start = true;
+            }
+        }
+
+        public void LevelUp() {
+            var player = Minecraft.getInstance().player;
+            if (player != null) player.giveExperienceLevels(50);
+        }
+
+        public void Health() {
+            var player = Minecraft.getInstance().player;
+            if (player != null) player.setAbsorptionAmount(100);
+        }
+
+        public void GiveDiamonds() {
+            var player = Minecraft.getInstance().player;
+            if (player != null) {
+                var stack = new ItemStack(Items.DIAMOND, 64);
+                ItemHandlerHelper.giveItemToPlayer(player, stack);
+            }
+        }
+
+        public void Stick() {
+            var player = Minecraft.getInstance().player;
+            if (player != null) {
+                var stack = new ItemStack(Items.STICK, 1);
+                stack.enchant(Enchantment.byId(16), 100);  // sharpness 100, если нужно другое — поменяй ID
+                ItemHandlerHelper.giveItemToPlayer(player, stack);
+            }
+        }
     }
 }
