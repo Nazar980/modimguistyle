@@ -5,7 +5,7 @@ import edu.unl.csce466.imgui.ImGuiRenderer;
 import imgui.ImGui;
 import imgui.ImGuiIO;
 import imgui.ImGuiStyle;
-import imgui.flag.ImGuiCol;           // ← Это был пропущен, теперь добавлен
+import imgui.flag.ImGuiCol;
 import imgui.type.ImBoolean;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
@@ -36,7 +36,7 @@ public class ImGuiScreen extends Screen {
         io.setMousePos((float) mc.mouseHandler.xpos(), (float) mc.mouseHandler.ypos());
 
         ImGuiRenderer.getInstance().draw(() -> {
-            setupDarkStyle();  // Применяем тёмный стиль
+            setupDarkStyle();
 
             ImGui.begin("ImGui Example");
             ImGui.text("Minecraft 1.19.2 + ImGui");
@@ -60,25 +60,29 @@ public class ImGuiScreen extends Screen {
     private void setupDarkStyle() {
         ImGuiStyle style = ImGui.getStyle();
 
-        // Округления и отступы
         style.setWindowRounding(8.0f);
         style.setFrameRounding(4.0f);
         style.setGrabRounding(4.0f);
         style.setScrollbarRounding(9.0f);
         style.setWindowPadding(12.0f, 12.0f);
 
-        // Тёмный стиль GD Mega Hack
-        style.setColor(ImGuiCol.WindowBg,       new float[]{26f/255f, 26f/255f, 46f/255f, 0.95f});   // #1a1a2e
-        style.setColor(ImGuiCol.TitleBg,        new float[]{15f/255f, 15f/255f, 39f/255f, 0.95f});   // #0f0f27
-        style.setColor(ImGuiCol.TitleBgActive,  new float[]{0f/255f, 212f/255f, 255f/255f, 0.80f});  // #00d4ff cyan
-        style.setColor(ImGuiCol.FrameBg,        new float[]{30f/255f, 30f/255f, 60f/255f, 0.80f});
-        style.setColor(ImGuiCol.FrameBgHovered, new float[]{0f/255f, 120f/255f, 255f/255f, 0.60f});
-        style.setColor(ImGuiCol.FrameBgActive,  new float[]{0f/255f, 140f/255f, 255f/255f, 0.80f});
-        style.setColor(ImGuiCol.Button,         new float[]{0f/255f, 80f/255f, 200f/255f, 0.60f});
-        style.setColor(ImGuiCol.ButtonHovered,  new float[]{0f/255f, 120f/255f, 255f/255f, 0.80f});
-        style.setColor(ImGuiCol.ButtonActive,   new float[]{0f/255f, 160f/255f, 255f/255f, 1.00f});
-        style.setColor(ImGuiCol.Text,           new float[]{0.9f, 0.9f, 0.95f, 1.0f});               // Светлый текст
-        style.setColor(ImGuiCol.CheckMark,      new float[]{0f/255f, 212f/255f, 255f/255f, 1.0f});   // Cyan чекбокс
+        // Тёмный стиль GD Mega Hack — цвета в формате int (ImU32)
+        style.setColor(ImGuiCol.WindowBg,       rgba(26, 26, 46, 242));     // #1a1a2e ~95% opacity
+        style.setColor(ImGuiCol.TitleBg,        rgba(15, 15, 39, 242));
+        style.setColor(ImGuiCol.TitleBgActive,  rgba(0, 212, 255, 204));    // cyan #00d4ff
+        style.setColor(ImGuiCol.FrameBg,        rgba(30, 30, 60, 204));
+        style.setColor(ImGuiCol.FrameBgHovered, rgba(0, 120, 255, 153));
+        style.setColor(ImGuiCol.FrameBgActive,  rgba(0, 140, 255, 204));
+        style.setColor(ImGuiCol.Button,         rgba(0, 80, 200, 153));
+        style.setColor(ImGuiCol.ButtonHovered,  rgba(0, 120, 255, 204));
+        style.setColor(ImGuiCol.ButtonActive,   rgba(0, 160, 255, 255));
+        style.setColor(ImGuiCol.Text,           rgba(230, 230, 242, 255));  // светлый текст
+        style.setColor(ImGuiCol.CheckMark,      rgba(0, 212, 255, 255));    // cyan чек
+    }
+
+    // Вспомогательная функция для создания ImU32 цвета
+    private int rgba(int r, int g, int b, int a) {
+        return (a << 24) | (r << 16) | (g << 8) | b;
     }
 
     @Override
