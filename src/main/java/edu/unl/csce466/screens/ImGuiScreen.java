@@ -6,6 +6,8 @@ import imgui.ImGui;
 import imgui.ImGuiIO;
 import imgui.ImGuiStyle;
 import imgui.flag.ImGuiCol;
+import imgui.flag.ImGuiCond;
+import imgui.flag.ImGuiWindowFlags;
 import imgui.type.ImBoolean;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
@@ -26,19 +28,41 @@ public class ImGuiScreen extends Screen {
     }
 
     @Override
-    public void init() {
-    }
-
-    @Override
     public void render(PoseStack poseStack, int mouseX, int mouseY, float partialTick) {
         ImGuiIO io = ImGui.getIO();
         Minecraft mc = Minecraft.getInstance();
         io.setMousePos((float) mc.mouseHandler.xpos(), (float) mc.mouseHandler.ypos());
 
         ImGuiRenderer.getInstance().draw(() -> {
-            setupTransparentCalmStyle();
+            setupStyle();
 
-            ImGui.begin("ImGui Example");
+            // Центрируем окно при первом открытии
+            if (ImGui.isFirstUse()) {
+                float windowWidth = 420;
+                float windowHeight = 320;
+                ImGui.setNextWindowSize(windowWidth, windowHeight, ImGuiCond.Always);
+                ImGui.setNextWindowPos(
+                    (io.getDisplaySizeX() - windowWidth) * 0.5f,
+                    (io.getDisplaySizeY() - windowHeight) * 0.5f,
+                    ImGuiCond.Always
+                );
+            }
+
+            // Флаги: без скруглений, без лишних кнопок
+            int flags = ImGuiWindowFlags.NoTitleBarCollapse | ImGuiWindowFlags.NoResize;
+
+            ImGui.begin("ImGui Example", flags);
+
+            // Центрируем текст в заголовке (TitleBar) вручную
+            String titleText = "ImGui Example";
+            float textWidth = ImGui.calcTextSize(titleText).x;
+            float titleBarWidth = ImGui.getWindowWidth() - ImGui.getStyle().getWindowPaddingX() * 2;
+            float cursorX = (titleBarWidth - textWidth) * 0.5f + ImGui.getStyle().getWindowPaddingX();
+            ImGui.setCursorPosX(cursorX);
+            ImGui.text(titleText);
+
+            ImGui.separator();  // линия под заголовком
+
             ImGui.text("Minecraft 1.19.2 + ImGui");
             if (ImGui.button("Click me")) {
                 buttonClicked = true;
@@ -57,47 +81,44 @@ public class ImGuiScreen extends Screen {
         });
     }
 
-    private void setupTransparentCalmStyle() {
+    private void setupStyle() {
         ImGuiStyle style = ImGui.getStyle();
 
-        // Скругления и отступы (оставляем как было)
-        style.setWindowRounding(6.0f);
-        style.setFrameRounding(4.0f);
-        style.setTabRounding(4.0f);
-        style.setGrabRounding(4.0f);
-        style.setScrollbarRounding(6.0f);
-        style.setWindowPadding(12.0f, 12.0f);
+        // Убираем ВСЕ скругления (0.0f) — строго квадратные углы
+        style.setWindowRounding(0.0f);
+        style.setFrameRounding(0.0f);
+        style.setTabRounding(0.0f);
+        style.setGrabRounding(0.0f);
+        style.setScrollbarRounding(0.0f);
+        style.setPopupRounding(0.0f);
+
+        // Отступы оставляем минимальными
+        style.setWindowPadding(10.0f, 10.0f);
         style.setFramePadding(6.0f, 4.0f);
         style.setItemSpacing(8.0f, 6.0f);
 
-        // Более прозрачно везде (alpha 180–220 вместо 240–255)
-        style.setColor(ImGuiCol.WindowBg,       rgba(30, 30, 35, 180));      // фон окна прозрачнее
-        style.setColor(ImGuiCol.TitleBg,        rgba(245, 70, 130, 220));    // основной заголовок — более розовый
-        style.setColor(ImGuiCol.TitleBgActive,  rgba(255, 90, 150, 220));    // активный — ещё ярче и розовее
-        style.setColor(ImGuiCol.TitleBgCollapsed, rgba(245, 70, 130, 160));  // свёрнутый — полупрозрачный
+        // Цвета — твои предыдущие + более розовый заголовок
+        style.setColor(ImGuiCol.WindowBg,       rgba(30, 30, 35, 180));
+        style.setColor(ImGuiCol.TitleBg,        rgba(245, 70, 130, 220));    // основной заголовок — розовый
+        style.setColor(ImGuiCol.TitleBgActive,  rgba(255, 90, 150, 220));    // активный — ярче
+        style.setColor(ImGuiCol.TitleBgCollapsed, rgba(245, 70, 130, 160));
 
-        // Текст белый
         style.setColor(ImGuiCol.Text,           rgba(255, 255, 255, 255));
         style.setColor(ImGuiCol.TextDisabled,   rgba(180, 180, 190, 140));
 
-        // Табы — полупрозрачные
         style.setColor(ImGuiCol.Tab,            rgba(42, 42, 42, 180));
         style.setColor(ImGuiCol.TabHovered,     rgba(60, 60, 65, 200));
         style.setColor(ImGuiCol.TabActive,      rgba(50, 50, 55, 220));
-        style.setColor(ImGuiCol.TabUnfocused,   rgba(42, 42, 42, 140));
-        style.setColor(ImGuiCol.TabUnfocusedActive, rgba(50, 50, 55, 160));
 
-        // Кнопки — полупрозрачные
         style.setColor(ImGuiCol.Button,         rgba(70, 70, 80, 160));
         style.setColor(ImGuiCol.ButtonHovered,  rgba(90, 90, 100, 180));
         style.setColor(ImGuiCol.ButtonActive,   rgba(110, 110, 120, 220));
-        style.setColor(ImGuiCol.CheckMark,      rgba(245, 70, 130, 255));    // акцент на чекбоксе (розовый)
+        style.setColor(ImGuiCol.CheckMark,      rgba(245, 70, 130, 255));
         style.setColor(ImGuiCol.FrameBg,        rgba(50, 50, 55, 160));
         style.setColor(ImGuiCol.FrameBgHovered, rgba(70, 70, 80, 180));
         style.setColor(ImGuiCol.FrameBgActive,  rgba(90, 90, 100, 220));
     }
 
-    // Функция для ImU32 цвета
     private int rgba(int r, int g, int b, int a) {
         return (a << 24) | (r << 16) | (g << 8) | b;
     }
