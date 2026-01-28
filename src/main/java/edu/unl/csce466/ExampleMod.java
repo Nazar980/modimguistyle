@@ -32,7 +32,7 @@ public class ExampleMod {
     public static class ClientModEvents {
         @SubscribeEvent
         public static void onClientSetup(FMLClientSetupEvent event) {
-            IMGUI_SCREEN.setup();
+            IMGUI_SCREEN.init();
         }
     }
 
