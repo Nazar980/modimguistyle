@@ -1,25 +1,25 @@
 package edu.unl.csce466.screens;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import edu.unl.csce466.cheat.CheatManager;  // Импорт CheatManager (создай его, как я предлагал ранее)
+import edu.unl.csce466.cheat.CheatManager;
 import edu.unl.csce466.imgui.ImGuiRenderer;
 import imgui.ImColor;
 import imgui.ImGui;
 import imgui.ImGuiIO;
 import imgui.ImGuiStyle;
+import imgui.ImVec4;                // ← Фикс: imgui.ImVec4, а НЕ imgui.type.ImVec4
 import imgui.flag.ImGuiCol;
 import imgui.flag.ImGuiCond;
 import imgui.flag.ImGuiWindowFlags;
 import imgui.type.ImBoolean;
 import imgui.type.ImFloat;
-import imgui.type.ImVec4;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 public class ImGuiScreen extends Screen {
     private static ImGuiScreen _INSTANCE = null;
-    private final ImBoolean windowOpen = new ImBoolean(true);  // Для close button
+    private final ImBoolean windowOpen = new ImBoolean(true);  // Для кнопки закрытия окна
 
     public static ImGuiScreen getInstance() {
         if (_INSTANCE == null) _INSTANCE = new ImGuiScreen();
@@ -39,80 +39,85 @@ public class ImGuiScreen extends Screen {
     public void render(PoseStack poseStack, int mouseX, int mouseY, float partialTick) {
         ImGuiIO io = ImGui.getIO();
         Minecraft mc = Minecraft.getInstance();
+
+        // Обновляем позицию мыши для ImGui (важно для кликов)
         io.setMousePos((float) mc.mouseHandler.xpos(), (float) mc.mouseHandler.ypos());
 
-        // Рендер ImGui контента
+        // Рендерим всё меню через draw call
         ImGuiRenderer.getInstance().draw(this::renderMegaHackMenu);
     }
 
     private void renderMegaHackMenu() {
-        // GD Mega Hack стиль: тёмный космос + neon cyan
+        // Применяем стиль GD Mega Hack каждый раз (чтобы не слетал)
         setupGDMegaHackStyle();
 
-        // Главное окно: centered, draggable, no resize/collapse, с close button
-        ImGui.setNextWindowPos(ImGui.getIO().getDisplaySizeX() * 0.5f, ImGui.getIO().getDisplaySizeY() * 0.5f, ImGuiCond.FirstUseEver, 0.5f, 0.5f);
-        ImGui.setNextWindowSize(520, 420, ImGuiCond.FirstUseEver);
+        // Окно: центрировано при первом открытии, draggable, без ресайза/коллапса
+        ImGui.setNextWindowPos(ImGui.getIO().getDisplaySizeX() * 0.5f, ImGui.getIO().getDisplaySizeY() * 0.5f,
+                ImGuiCond.FirstUseEver, 0.5f, 0.5f);
+        ImGui.setNextWindowSize(540, 460, ImGuiCond.FirstUseEver);
 
-        ImGui.begin("GD Mega Hack v8 for Minecraft 1.19.2", windowOpen,
+        ImGui.begin("GD Mega Hack v8 - Minecraft Edition", windowOpen,
                 ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.AlwaysAutoResize);
 
-        // Neon header
-        ImGui.pushStyleColor(ImGuiCol.Text, 0.0f, 0.87f, 1.0f, 1.0f);  // #00d4ff cyan
-        ImGui.text("    GEOMETRIC DASH MEGA HACK PORTED TO MINECRAFT     ");
-        ImGui.separator();
+        // Neon заголовок с glow-эффектом
+        ImGui.pushStyleColor(ImGuiCol.Text, 0.0f, 0.82f, 1.0f, 1.0f);  // Cyan neon #00d1ff
+        ImGui.text("   GEOMETRIC DASH MEGA HACK   ");
+        ImGui.text("       PORTED TO MINECRAFT 1.19.2       ");
         ImGui.popStyleColor();
 
-        // Tab Bar как в GD MH v7
-        if (ImGui.beginTabBar("CheatTabs", ImGuiWindowFlags.None)) {
-            // Combat Tab
+        ImGui.separator();
+
+        // Tab bar в стиле GD MH
+        if (ImGui.beginTabBar("MainTabs")) {
+
+            // Combat
             if (ImGui.beginTabItem("Combat")) {
-                ImBoolean killAura = new ImBoolean(CheatManager.killAuraEnabled);
-                ImGui.checkbox("KillAura", killAura);
-                CheatManager.killAuraEnabled = killAura.get();
+                ImBoolean killaura = new ImBoolean(CheatManager.killAuraEnabled);
+                ImGui.checkbox("KillAura", killaura);
+                CheatManager.killAuraEnabled = killaura.get();
 
                 ImFloat reach = new ImFloat(CheatManager.reachDistance);
-                ImGui.sliderFloat("Reach", reach, 3.0f, 6.0f, "%.1f blocks");
+                ImGui.sliderFloat("Reach Distance", reach, 3.0f, 8.0f, "%.1f blocks");
                 CheatManager.reachDistance = reach.get();
 
                 ImGui.endTabItem();
             }
 
-            // Movement Tab
+            // Movement
             if (ImGui.beginTabItem("Movement")) {
                 ImBoolean fly = new ImBoolean(CheatManager.flyEnabled);
                 ImGui.checkbox("Fly", fly);
                 CheatManager.flyEnabled = fly.get();
 
                 ImFloat speed = new ImFloat(CheatManager.speedMultiplier);
-                ImGui.sliderFloat("Speed Multiplier", speed, 1.0f, 10.0f, "%.1fx");
+                ImGui.sliderFloat("Speed Multiplier", speed, 1.0f, 15.0f, "%.1fx");
                 CheatManager.speedMultiplier = speed.get();
 
                 ImGui.endTabItem();
             }
 
-            // Visuals Tab
+            // Visuals
             if (ImGui.beginTabItem("Visuals")) {
                 ImBoolean esp = new ImBoolean(CheatManager.espEnabled);
-                ImGui.checkbox("ESP (Players/Mobs)", esp);
+                ImGui.checkbox("ESP (Players & Mobs)", esp);
                 CheatManager.espEnabled = esp.get();
 
-                // Добавь больше: Fullbright, XRay toggle и т.д.
+                ImGui.checkbox("Fullbright", new ImBoolean(CheatManager.fullbrightEnabled));
+                // CheatManager.fullbrightEnabled = ... (добавь в CheatManager если нужно)
+
                 ImGui.endTabItem();
             }
 
-            // Misc Tab
+            // Misc / Utils
             if (ImGui.beginTabItem("Misc")) {
-                if (ImGui.button("Panic (Disable All Cheats)")) {
-                    CheatManager.flyEnabled = false;
-                    CheatManager.killAuraEnabled = false;
-                    CheatManager.espEnabled = false;
-                    CheatManager.speedMultiplier = 2.0f;
-                    CheatManager.reachDistance = 4.5f;
+                if (ImGui.button("Panic Button - Disable All")) {
+                    CheatManager.disableAll();  // Вызываем метод из CheatManager
                 }
 
                 ImGui.separator();
-                ImGui.text("Keybinds:");
-                ImGui.textColored(0.0f, 0.87f, 1.0f, 1.0f, "Insert - Toggle Menu");
+                ImGui.textColored(0.0f, 0.82f, 1.0f, 1.0f, "Hotkeys:");
+                ImGui.text("Insert - Toggle Menu");
+                ImGui.text("Right Click - Test Lightning (if enabled)");
 
                 ImGui.endTabItem();
             }
@@ -120,63 +125,57 @@ public class ImGuiScreen extends Screen {
             ImGui.endTabBar();
         }
 
-        // Footer info
+        // Футер
         ImGui.separator();
-        ImGui.text("Status: All cheats work in single/multiplayer (server-side hooks soon)");
+        ImGui.textDisabled("Built with ImGui-Java | Forge 1.19.2");
 
         ImGui.end();
 
-        // Close screen if window closed
+        // Если юзер нажал крестик — закрываем экран
         if (!windowOpen.get()) {
             Minecraft.getInstance().setScreen(null);
         }
     }
 
-    // GD Mega Hack стиль (вызывается каждый кадр для consistency)
     private void setupGDMegaHackStyle() {
         ImGuiStyle style = ImGui.getStyle();
-        style.setWindowRounding(8.0f);
-        style.setFrameRounding(4.0f);
-        style.setGrabRounding(4.0f);
-        style.setScrollbarRounding(9.0f);
-        style.setWindowPadding(15.0f, 15.0f);
-        style.setItemSpacing(12.0f, 8.0f);
 
-        // Цвета GD MH v7/v8: dark space + neon cyan gradients
-        style.setWindowBg(ImColor.rgbaToVec4(26, 26, 46, 230));     // #1a1a2e
-        style.setTitleBg(ImColor.rgbaToVec4(15, 15, 39, 230));      // #0f0f27
-        style.setTitleBgActive(ImColor.rgbaToVec4(0, 74, 173, 200)); // Neon blue-cyan
-        style.setMenuBarBg(ImColor.rgbaToVec4(18, 18, 46, 230));
+        // Округления и padding как в GD MH
+        style.setWindowRounding(10.0f);
+        style.setFrameRounding(5.0f);
+        style.setGrabRounding(5.0f);
+        style.setScrollbarRounding(10.0f);
+        style.setWindowPadding(16.0f, 16.0f);
+        style.setItemSpacing(10.0f, 6.0f);
 
-        style.setScrollbarBg(ImColor.rgbaToVec4(8, 8, 16, 200));
-        style.setScrollbarGrab(ImColor.rgbaToVec4(0, 96, 191, 180)); // Neon grab
-        style.setScrollbarGrabHovered(ImColor.rgbaToVec4(0, 125, 255, 220));
-        style.setScrollbarGrabActive(ImColor.rgbaToVec4(0, 150, 255, 255));
+        // Основные цвета: dark space + cyan neon
+        style.setColor(ImGuiCol.WindowBg, ImColor.rgbaToVec4(20, 20, 40, 240));       // #141428
+        style.setColor(ImGuiCol.TitleBg, ImColor.rgbaToVec4(10, 10, 30, 240));        // #0a0a1e
+        style.setColor(ImGuiCol.TitleBgActive, ImColor.rgbaToVec4(0, 100, 255, 220)); // Neon cyan active
+        style.setColor(ImGuiCol.MenuBarBg, ImColor.rgbaToVec4(15, 15, 35, 240));
 
-        style.setFrameBg(ImColor.rgbaToVec4(26, 26, 46, 200));
-        style.setFrameBgHovered(ImColor.rgbaToVec4(0, 96, 191, 160));
-        style.setFrameBgActive(ImColor.rgbaToVec4(0, 125, 255, 200));
+        style.setColor(ImGuiCol.FrameBg, ImColor.rgbaToVec4(30, 30, 60, 200));
+        style.setColor(ImGuiCol.FrameBgHovered, ImColor.rgbaToVec4(0, 120, 255, 180));
+        style.setColor(ImGuiCol.FrameBgActive, ImColor.rgbaToVec4(0, 140, 255, 220));
 
-        style.setSliderGrab(ImColor.rgbaToVec4(0, 112, 255, 220));
-        style.setSliderGrabActive(ImColor.rgbaToVec4(0, 150, 255, 255));
+        style.setColor(ImGuiCol.Button, ImColor.rgbaToVec4(0, 80, 200, 180));
+        style.setColor(ImGuiCol.ButtonHovered, ImColor.rgbaToVec4(0, 120, 255, 220));
+        style.setColor(ImGuiCol.ButtonActive, ImColor.rgbaToVec4(0, 160, 255, 255));
 
-        style.setButton(ImColor.rgbaToVec4(0, 74, 173, 150));
-        style.setButtonHovered(ImColor.rgbaToVec4(0, 112, 255, 200));
-        style.setButtonActive(ImColor.rgbaToVec4(0, 150, 255, 255));
+        style.setColor(ImGuiCol.SliderGrab, ImColor.rgbaToVec4(0, 140, 255, 220));
+        style.setColor(ImGuiCol.SliderGrabActive, ImColor.rgbaToVec4(0, 180, 255, 255));
 
-        style.setHeader(ImColor.rgbaToVec4(0, 74, 173, 120));
-        style.setHeaderHovered(ImColor.rgbaToVec4(0, 112, 255, 180));
-        style.setHeaderActive(ImColor.rgbaToVec4(0, 150, 255, 240));
+        style.setColor(ImGuiCol.CheckMark, ImColor.rgbaToVec4(0, 160, 255, 255));
+        style.setColor(ImGuiCol.Tab, ImColor.rgbaToVec4(30, 30, 60, 200));
+        style.setColor(ImGuiCol.TabHovered, ImColor.rgbaToVec4(0, 120, 255, 220));
+        style.setColor(ImGuiCol.TabActive, ImColor.rgbaToVec4(0, 100, 255, 255));
 
-        style.setTab(ImColor.rgbaToVec4(26, 26, 46, 200));
-        style.setTabHovered(ImColor.rgbaToVec4(0, 96, 191, 220));
-        style.setTabActive(ImColor.rgbaToVec4(0, 74, 173, 255));
-
-        style.setSeparator(ImColor.rgbaToVec4(0, 74, 173, 150));
-        style.setSeparatorHovered(ImColor.rgbaToVec4(0, 112, 255, 200));
-        style.setSeparatorActive(ImColor.rgbaToVec4(0, 150, 255, 255));
+        style.setColor(ImGuiCol.ScrollbarBg, ImColor.rgbaToVec4(10, 10, 20, 180));
+        style.setColor(ImGuiCol.ScrollbarGrab, ImColor.rgbaToVec4(0, 100, 255, 200));
+        style.setColor(ImGuiCol.ScrollbarGrabHovered, ImColor.rgbaToVec4(0, 140, 255, 220));
     }
 
+    // Input handlers (чтобы ImGui ловил клики/скролл)
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         ImGui.getIO().setMouseDown(button, true);
