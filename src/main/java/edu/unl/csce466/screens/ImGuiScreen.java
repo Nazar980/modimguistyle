@@ -22,14 +22,16 @@ public class ImGuiScreen extends Screen {
         super(Component.literal("ImGui"));
     }
 
+    @Override
     public void init() {
     }
 
     @Override
     public void render(PoseStack poseStack, int mouseX, int mouseY, float partialTick) {
-        // Обновляем позицию мыши каждый кадр
         ImGuiIO io = ImGui.getIO();
         Minecraft mc = Minecraft.getInstance();
+
+        // Обновляем позицию мыши каждый кадр
         io.setMousePos((float) mc.mouseHandler.xpos(), (float) mc.mouseHandler.ypos());
 
         ImGuiRenderer.getInstance().draw(() -> {
@@ -61,13 +63,14 @@ public class ImGuiScreen extends Screen {
     }
 
     @Override
-    public boolean mouseDragged(double mouseX, double mouseY, int button) {
-        return super.mouseDragged(mouseX, mouseY, button);
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+        // Можно добавить io.setMousePos здесь, если драг не работает гладко
+        return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
     }
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
-        ImGui.getIO().addMouseWheelDelta(0, (float) delta);
+        ImGui.getIO().setMouseWheel((float) delta);  // ← правильный метод для колёсика
         return super.mouseScrolled(mouseX, mouseY, delta);
     }
 
