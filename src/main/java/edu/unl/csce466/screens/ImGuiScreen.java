@@ -36,7 +36,7 @@ public class ImGuiScreen extends Screen {
         io.setMousePos((float) mc.mouseHandler.xpos(), (float) mc.mouseHandler.ypos());
 
         ImGuiRenderer.getInstance().draw(() -> {
-            setupDarkStyle();
+            setupCalmStyle();
 
             ImGui.begin("ImGui Example");
             ImGui.text("Minecraft 1.19.2 + ImGui");
@@ -57,27 +57,43 @@ public class ImGuiScreen extends Screen {
         });
     }
 
-    private void setupDarkStyle() {
+    private void setupCalmStyle() {
         ImGuiStyle style = ImGui.getStyle();
 
-        style.setWindowRounding(8.0f);
+        // Базовые отступы и скругления
+        style.setWindowRounding(6.0f);
         style.setFrameRounding(4.0f);
+        style.setTabRounding(4.0f);
         style.setGrabRounding(4.0f);
-        style.setScrollbarRounding(9.0f);
+        style.setScrollbarRounding(6.0f);
         style.setWindowPadding(12.0f, 12.0f);
+        style.setFramePadding(6.0f, 4.0f);
+        style.setItemSpacing(8.0f, 6.0f);
 
-        // Тёмный стиль GD Mega Hack — цвета в формате int (ImU32)
-        style.setColor(ImGuiCol.WindowBg,       rgba(26, 26, 46, 242));     // #1a1a2e ~95% opacity
-        style.setColor(ImGuiCol.TitleBg,        rgba(15, 15, 39, 242));
-        style.setColor(ImGuiCol.TitleBgActive,  rgba(0, 212, 255, 204));    // cyan #00d4ff
-        style.setColor(ImGuiCol.FrameBg,        rgba(30, 30, 60, 204));
-        style.setColor(ImGuiCol.FrameBgHovered, rgba(0, 120, 255, 153));
-        style.setColor(ImGuiCol.FrameBgActive,  rgba(0, 140, 255, 204));
-        style.setColor(ImGuiCol.Button,         rgba(0, 80, 200, 153));
-        style.setColor(ImGuiCol.ButtonHovered,  rgba(0, 120, 255, 204));
-        style.setColor(ImGuiCol.ButtonActive,   rgba(0, 160, 255, 255));
-        style.setColor(ImGuiCol.Text,           rgba(230, 230, 242, 255));  // светлый текст
-        style.setColor(ImGuiCol.CheckMark,      rgba(0, 212, 255, 255));    // cyan чек
+        // Цвета
+        style.setColor(ImGuiCol.WindowBg,       rgba(30, 30, 35, 240));     // тёмный фон окна
+        style.setColor(ImGuiCol.TitleBg,        rgba(25, 25, 30, 240));
+        style.setColor(ImGuiCol.TitleBgActive,  rgba(25, 25, 30, 240));
+
+        // Табы — спокойные цвета
+        style.setColor(ImGuiCol.Tab,            rgba(42, 42, 42, 255));      // обычный таб фон
+        style.setColor(ImGuiCol.TabHovered,     rgba(60, 60, 65, 255));      // hovered — чуть светлее
+        style.setColor(ImGuiCol.TabActive,      rgba(231, 57, 102, 255));    // активный таб — твой основной цвет
+        style.setColor(ImGuiCol.TabUnfocused,   rgba(42, 42, 42, 200));
+        style.setColor(ImGuiCol.TabUnfocusedActive, rgba(231, 57, 102, 200));
+
+        // Текст — полностью белый везде
+        style.setColor(ImGuiCol.Text,           rgba(255, 255, 255, 255));
+        style.setColor(ImGuiCol.TextDisabled,   rgba(180, 180, 190, 180));
+
+        // Кнопки и чекбоксы — спокойные, без неона
+        style.setColor(ImGuiCol.Button,         rgba(70, 70, 80, 200));
+        style.setColor(ImGuiCol.ButtonHovered,  rgba(90, 90, 100, 220));
+        style.setColor(ImGuiCol.ButtonActive,   rgba(231, 57, 102, 180));
+        style.setColor(ImGuiCol.CheckMark,      rgba(231, 57, 102, 255));
+        style.setColor(ImGuiCol.FrameBg,        rgba(50, 50, 55, 200));
+        style.setColor(ImGuiCol.FrameBgHovered, rgba(70, 70, 80, 220));
+        style.setColor(ImGuiCol.FrameBgActive,  rgba(231, 57, 102, 140));
     }
 
     // Вспомогательная функция для создания ImU32 цвета
