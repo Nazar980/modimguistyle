@@ -5,6 +5,7 @@ import edu.unl.csce466.imgui.ImGuiRenderer;
 import imgui.ImGui;
 import imgui.ImGuiIO;
 import imgui.ImGuiStyle;
+import imgui.flag.ImGuiCol;           // ← Это был пропущен, теперь добавлен
 import imgui.type.ImBoolean;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
@@ -35,7 +36,7 @@ public class ImGuiScreen extends Screen {
         io.setMousePos((float) mc.mouseHandler.xpos(), (float) mc.mouseHandler.ypos());
 
         ImGuiRenderer.getInstance().draw(() -> {
-            setupDarkStyle();  // ← Применяем тёмный стиль перед рисованием
+            setupDarkStyle();  // Применяем тёмный стиль
 
             ImGui.begin("ImGui Example");
             ImGui.text("Minecraft 1.19.2 + ImGui");
@@ -59,14 +60,14 @@ public class ImGuiScreen extends Screen {
     private void setupDarkStyle() {
         ImGuiStyle style = ImGui.getStyle();
 
-        // Округления и отступы (чтобы выглядело красиво и современно)
+        // Округления и отступы
         style.setWindowRounding(8.0f);
         style.setFrameRounding(4.0f);
         style.setGrabRounding(4.0f);
         style.setScrollbarRounding(9.0f);
         style.setWindowPadding(12.0f, 12.0f);
 
-        // Тёмный фон + неоновые акценты в стиле GD Mega Hack
+        // Тёмный стиль GD Mega Hack
         style.setColor(ImGuiCol.WindowBg,       new float[]{26f/255f, 26f/255f, 46f/255f, 0.95f});   // #1a1a2e
         style.setColor(ImGuiCol.TitleBg,        new float[]{15f/255f, 15f/255f, 39f/255f, 0.95f});   // #0f0f27
         style.setColor(ImGuiCol.TitleBgActive,  new float[]{0f/255f, 212f/255f, 255f/255f, 0.80f});  // #00d4ff cyan
