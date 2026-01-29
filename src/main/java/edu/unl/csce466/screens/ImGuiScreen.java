@@ -7,6 +7,7 @@ import imgui.ImGuiIO;
 import imgui.ImGuiStyle;
 import imgui.flag.ImGuiCol;
 import imgui.flag.ImGuiCond;
+import imgui.flag.ImGuiStyleVar;
 import imgui.flag.ImGuiWindowFlags;
 import imgui.type.ImBoolean;
 import net.minecraft.client.Minecraft;
@@ -28,10 +29,6 @@ public class ImGuiScreen extends Screen {
     }
 
     @Override
-    public void init() {
-    }
-
-    @Override
     public void render(PoseStack poseStack, int mouseX, int mouseY, float partialTick) {
         ImGuiIO io = ImGui.getIO();
         Minecraft mc = Minecraft.getInstance();
@@ -40,7 +37,7 @@ public class ImGuiScreen extends Screen {
         ImGuiRenderer.getInstance().draw(() -> {
             setupStyle();
 
-            // Центрируем окно по экрану при первом открытии
+            // Центрируем окно
             ImGui.setNextWindowSize(420, 320, ImGuiCond.FirstUseEver);
             ImGui.setNextWindowPos(
                 (io.getDisplaySizeX() - 420) * 0.5f,
@@ -48,12 +45,15 @@ public class ImGuiScreen extends Screen {
                 ImGuiCond.FirstUseEver
             );
 
-            // Флаги: без скруглений, без коллапса, без ресайза
             int flags = ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoResize;
 
             ImGui.begin("ImGui Example", flags);
 
-            // Центрируем текст в заголовке вручную
+            // Делаем текст жирным и чуть больше
+            ImGui.pushStyleVar(ImGuiStyleVar.ItemSpacing, 8.0f, 6.0f);
+            ImGui.getIO().setFontGlobalScale(1.1f);  // Увеличиваем масштаб шрифта на 10%
+
+            // Центрируем заголовок
             String titleText = "ImGui Example";
             float textWidth = ImGui.calcTextSize(titleText).x;
             float titleBarWidth = ImGui.getWindowWidth() - ImGui.getStyle().getWindowPaddingX() * 2;
@@ -73,6 +73,10 @@ public class ImGuiScreen extends Screen {
             if (ImGui.button("Toggle Demo Window")) {
                 showDemo.set(!showDemo.get());
             }
+
+            ImGui.popStyleVar();
+            ImGui.getIO().setFontGlobalScale(1.0f);  // Возвращаем масштаб обратно
+
             ImGui.end();
 
             if (showDemo.get()) {
@@ -84,7 +88,7 @@ public class ImGuiScreen extends Screen {
     private void setupStyle() {
         ImGuiStyle style = ImGui.getStyle();
 
-        // Убираем ВСЕ скругления углов (квадратные, как в Minecraft)
+        // Без скруглений
         style.setWindowRounding(0.0f);
         style.setFrameRounding(0.0f);
         style.setTabRounding(0.0f);
@@ -92,15 +96,13 @@ public class ImGuiScreen extends Screen {
         style.setScrollbarRounding(0.0f);
         style.setPopupRounding(0.0f);
 
-        // Отступы минимальные
         style.setWindowPadding(10.0f, 10.0f);
         style.setFramePadding(6.0f, 4.0f);
         style.setItemSpacing(8.0f, 6.0f);
 
-        // Цвета (розовый заголовок, прозрачность, белый текст)
         style.setColor(ImGuiCol.WindowBg,       rgba(30, 30, 35, 180));
-        style.setColor(ImGuiCol.TitleBg,        rgba(245, 70, 130, 220));    // розовый заголовок
-        style.setColor(ImGuiCol.TitleBgActive,  rgba(255, 90, 150, 220));    // ярче при фокусе
+        style.setColor(ImGuiCol.TitleBg,        rgba(245, 70, 130, 220));
+        style.setColor(ImGuiCol.TitleBgActive,  rgba(255, 90, 150, 220));
         style.setColor(ImGuiCol.TitleBgCollapsed, rgba(245, 70, 130, 160));
 
         style.setColor(ImGuiCol.Text,           rgba(255, 255, 255, 255));
