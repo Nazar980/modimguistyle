@@ -22,7 +22,7 @@ public class ImGuiScreen extends Screen {
     // Цвета (розовый заголовок 245,70,130,220 везде)
     private final float[] colWindowBg = {30/255f, 30/255f, 35/255f, 180/255f};
     private final float[] colTitleBg = {245/255f, 70/255f, 130/255f, 220/255f};  // ← Твой любимый розовый
-    private final float[] colTitleBgActive = {245/255f, 70/255f, 130/255f, 220/255f};  // То же самое для активного
+    private final float[] colTitleBgActive = {245/255f, 70/255f, 130/255f, 220/255f};  // То же для активного
     private final float[] colTitleBgCollapsed = {245/255f, 70/255f, 130/255f, 160/255f};
     private final float[] colText = {1f, 1f, 1f, 1f};
     private final float[] colTextDisabled = {180/255f, 180/255f, 190/255f, 140/255f};
@@ -32,7 +32,7 @@ public class ImGuiScreen extends Screen {
     private final float[] colButton = {70/255f, 70/255f, 80/255f, 160/255f};
     private final float[] colButtonHovered = {90/255f, 90/255f, 100/255f, 180/255f};
     private final float[] colButtonActive = {110/255f, 110/255f, 120/255f, 220/255f};
-    private final float[] colCheckMark = {245/255f, 70/255f, 130/255f, 1f};  // Акцент на чекбоксах тоже розовый
+    private final float[] colCheckMark = {245/255f, 70/255f, 130/255f, 1f};
     private final float[] colFrameBg = {50/255f, 50/255f, 55/255f, 160/255f};
     private final float[] colFrameBgHovered = {70/255f, 70/255f, 80/255f, 180/255f};
     private final float[] colFrameBgActive = {90/255f, 90/255f, 100/255f, 220/255f};
@@ -62,18 +62,10 @@ public class ImGuiScreen extends Screen {
                 ImGuiCond.FirstUseEver
             );
 
-            // Убрали NoCollapse и NoResize — теперь можно сворачивать, закрывать и масштабировать окно
-            int flags = ImGuiWindowFlags.None;  // ← Всё разрешено по умолчанию
+            // Разрешаем всё: закрытие, сворачивание, ресайз
+            int flags = ImGuiWindowFlags.None;
 
-            ImGui.begin("GD Mega Hack", flags);  // ← Заголовок теперь с кнопками × и −
-
-            // Центрированный заголовок (текст по центру)
-            String titleText = "GD Mega Hack";
-            float textWidth = ImGui.calcTextSize(titleText).x;
-            float titleBarWidth = ImGui.getWindowWidth() - ImGui.getStyle().getWindowPaddingX() * 2;
-            float cursorX = (titleBarWidth - textWidth) * 0.5f + ImGui.getStyle().getWindowPaddingX();
-            ImGui.setCursorPosX(cursorX);
-            ImGui.text(titleText);
+            ImGui.begin("GD Mega Hack", flags);  // ← Заголовок теперь родной, с кнопками × и −
 
             ImGui.separator();
 
