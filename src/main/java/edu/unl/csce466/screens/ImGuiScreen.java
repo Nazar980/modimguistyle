@@ -19,7 +19,7 @@ public class ImGuiScreen extends Screen {
     private final ImBoolean showDemo = new ImBoolean(false);
     private final ImBoolean showStyleEditor = new ImBoolean(false);
 
-    // Цвета (розовый заголовок 245,70,130,220)
+    // Цвета (розовый заголовок 245,70,130,220 везде)
     private final float[] colWindowBg = {30/255f, 30/255f, 35/255f, 180/255f};
     private final float[] colTitleBg = {245/255f, 70/255f, 130/255f, 220/255f};  // ← Твой любимый
     private final float[] colTitleBgActive = {245/255f, 70/255f, 130/255f, 220/255f};
@@ -62,39 +62,10 @@ public class ImGuiScreen extends Screen {
                 ImGuiCond.FirstUseEver
             );
 
-            // Кастомный заголовок — NoTitleBar + свой бар с центрированным текстом
-            int flags = ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoResize;
+            // Разрешаем закрытие, сворачивание и ресайз — убрали NoCollapse и NoResize
+            int flags = ImGuiWindowFlags.None;
 
-            ImGui.begin("GD Mega Hack", flags);
-
-            // Кастомный TitleBar (фон + текст по центру + кнопки)
-            ImGuiStyle style = ImGui.getStyle();
-            float titleBarHeight = 30f;  // высота заголовка
-            ImGui.getWindowDrawList().addRectFilled(
-                ImGui.getWindowPosX(),
-                ImGui.getWindowPosY(),
-                ImGui.getWindowPosX() + ImGui.getWindowWidth(),
-                ImGui.getWindowPosY() + titleBarHeight,
-                ImGui.colorConvertFloat4ToU32(colTitleBg[0], colTitleBg[1], colTitleBg[2], colTitleBg[3])
-            );
-
-            // Текст по центру
-            String titleText = "GD Mega Hack";
-            float textWidth = ImGui.calcTextSize(titleText).x;
-            float cursorX = (ImGui.getWindowWidth() - textWidth) * 0.5f;
-            ImGui.setCursorPosX(cursorX);
-            ImGui.setCursorPosY(ImGui.getCursorPosY() + 6f);  // небольшой отступ сверху
-            ImGui.text(titleText);
-
-            // Кнопки закрытия/сворачивания (справа)
-            ImGui.sameLine(ImGui.getWindowWidth() - 80f);
-            if (ImGui.button("−")) {
-                ImGui.setWindowCollapsed(true);
-            }
-            ImGui.sameLine();
-            if (ImGui.button("×")) {
-                Minecraft.getInstance().setScreen(null);
-            }
+            ImGui.begin("GD Mega Hack", flags);  // ← Родной заголовок с кнопками × и −
 
             ImGui.separator();
 
