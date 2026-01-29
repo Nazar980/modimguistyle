@@ -5,7 +5,6 @@ import edu.unl.csce466.imgui.ImGuiRenderer;
 import imgui.ImGui;
 import imgui.ImGuiIO;
 import imgui.ImGuiStyle;
-import imgui.ImVec4;
 import imgui.flag.ImGuiCol;
 import imgui.flag.ImGuiCond;
 import imgui.flag.ImGuiWindowFlags;
@@ -20,23 +19,23 @@ public class ImGuiScreen extends Screen {
     private final ImBoolean showDemo = new ImBoolean(false);
     private final ImBoolean showStyleEditor = new ImBoolean(false);
 
-    // Храним цвета как ImVec4 (0..1)
-    private final ImVec4 colWindowBg = new ImVec4(30/255f, 30/255f, 35/255f, 180/255f);
-    private final ImVec4 colTitleBg = new ImVec4(245/255f, 70/255f, 130/255f, 220/255f);
-    private final ImVec4 colTitleBgActive = new ImVec4(255/255f, 90/255f, 150/255f, 220/255f);
-    private final ImVec4 colTitleBgCollapsed = new ImVec4(245/255f, 70/255f, 130/255f, 160/255f);
-    private final ImVec4 colText = new ImVec4(1f, 1f, 1f, 1f);
-    private final ImVec4 colTextDisabled = new ImVec4(180/255f, 180/255f, 190/255f, 140/255f);
-    private final ImVec4 colTab = new ImVec4(42/255f, 42/255f, 42/255f, 180/255f);
-    private final ImVec4 colTabHovered = new ImVec4(60/255f, 60/255f, 65/255f, 200/255f);
-    private final ImVec4 colTabActive = new ImVec4(50/255f, 50/255f, 55/255f, 220/255f);
-    private final ImVec4 colButton = new ImVec4(70/255f, 70/255f, 80/255f, 160/255f);
-    private final ImVec4 colButtonHovered = new ImVec4(90/255f, 90/255f, 100/255f, 180/255f);
-    private final ImVec4 colButtonActive = new ImVec4(110/255f, 110/255f, 120/255f, 220/255f);
-    private final ImVec4 colCheckMark = new ImVec4(245/255f, 70/255f, 130/255f, 1f);
-    private final ImVec4 colFrameBg = new ImVec4(50/255f, 50/255f, 55/255f, 160/255f);
-    private final ImVec4 colFrameBgHovered = new ImVec4(70/255f, 70/255f, 80/255f, 180/255f);
-    private final ImVec4 colFrameBgActive = new ImVec4(90/255f, 90/255f, 100/255f, 220/255f);
+    // Цвета теперь как float[] — именно то, что нужно для colorEdit4
+    private final float[] colWindowBg = {30/255f, 30/255f, 35/255f, 180/255f};
+    private final float[] colTitleBg = {245/255f, 70/255f, 130/255f, 220/255f};
+    private final float[] colTitleBgActive = {255/255f, 90/255f, 150/255f, 220/255f};
+    private final float[] colTitleBgCollapsed = {245/255f, 70/255f, 130/255f, 160/255f};
+    private final float[] colText = {1f, 1f, 1f, 1f};
+    private final float[] colTextDisabled = {180/255f, 180/255f, 190/255f, 140/255f};
+    private final float[] colTab = {42/255f, 42/255f, 42/255f, 180/255f};
+    private final float[] colTabHovered = {60/255f, 60/255f, 65/255f, 200/255f};
+    private final float[] colTabActive = {50/255f, 50/255f, 55/255f, 220/255f};
+    private final float[] colButton = {70/255f, 70/255f, 80/255f, 160/255f};
+    private final float[] colButtonHovered = {90/255f, 90/255f, 100/255f, 180/255f};
+    private final float[] colButtonActive = {110/255f, 110/255f, 120/255f, 220/255f};
+    private final float[] colCheckMark = {245/255f, 70/255f, 130/255f, 1f};
+    private final float[] colFrameBg = {50/255f, 50/255f, 55/255f, 160/255f};
+    private final float[] colFrameBgHovered = {70/255f, 70/255f, 80/255f, 180/255f};
+    private final float[] colFrameBgActive = {90/255f, 90/255f, 100/255f, 220/255f};
 
     public static ImGuiScreen getInstance() {
         if (_INSTANCE == null) _INSTANCE = new ImGuiScreen();
@@ -127,22 +126,22 @@ public class ImGuiScreen extends Screen {
     private void applyCurrentColors() {
         ImGuiStyle style = ImGui.getStyle();
 
-        style.setColor(ImGuiCol.WindowBg, colWindowBg.x, colWindowBg.y, colWindowBg.z, colWindowBg.w);
-        style.setColor(ImGuiCol.TitleBg, colTitleBg.x, colTitleBg.y, colTitleBg.z, colTitleBg.w);
-        style.setColor(ImGuiCol.TitleBgActive, colTitleBgActive.x, colTitleBgActive.y, colTitleBgActive.z, colTitleBgActive.w);
-        style.setColor(ImGuiCol.TitleBgCollapsed, colTitleBgCollapsed.x, colTitleBgCollapsed.y, colTitleBgCollapsed.z, colTitleBgCollapsed.w);
-        style.setColor(ImGuiCol.Text, colText.x, colText.y, colText.z, colText.w);
-        style.setColor(ImGuiCol.TextDisabled, colTextDisabled.x, colTextDisabled.y, colTextDisabled.z, colTextDisabled.w);
-        style.setColor(ImGuiCol.Tab, colTab.x, colTab.y, colTab.z, colTab.w);
-        style.setColor(ImGuiCol.TabHovered, colTabHovered.x, colTabHovered.y, colTabHovered.z, colTabHovered.w);
-        style.setColor(ImGuiCol.TabActive, colTabActive.x, colTabActive.y, colTabActive.z, colTabActive.w);
-        style.setColor(ImGuiCol.Button, colButton.x, colButton.y, colButton.z, colButton.w);
-        style.setColor(ImGuiCol.ButtonHovered, colButtonHovered.x, colButtonHovered.y, colButtonHovered.z, colButtonHovered.w);
-        style.setColor(ImGuiCol.ButtonActive, colButtonActive.x, colButtonActive.y, colButtonActive.z, colButtonActive.w);
-        style.setColor(ImGuiCol.CheckMark, colCheckMark.x, colCheckMark.y, colCheckMark.z, colCheckMark.w);
-        style.setColor(ImGuiCol.FrameBg, colFrameBg.x, colFrameBg.y, colFrameBg.z, colFrameBg.w);
-        style.setColor(ImGuiCol.FrameBgHovered, colFrameBgHovered.x, colFrameBgHovered.y, colFrameBgHovered.z, colFrameBgHovered.w);
-        style.setColor(ImGuiCol.FrameBgActive, colFrameBgActive.x, colFrameBgActive.y, colFrameBgActive.z, colFrameBgActive.w);
+        style.setColor(ImGuiCol.WindowBg, colWindowBg[0], colWindowBg[1], colWindowBg[2], colWindowBg[3]);
+        style.setColor(ImGuiCol.TitleBg, colTitleBg[0], colTitleBg[1], colTitleBg[2], colTitleBg[3]);
+        style.setColor(ImGuiCol.TitleBgActive, colTitleBgActive[0], colTitleBgActive[1], colTitleBgActive[2], colTitleBgActive[3]);
+        style.setColor(ImGuiCol.TitleBgCollapsed, colTitleBgCollapsed[0], colTitleBgCollapsed[1], colTitleBgCollapsed[2], colTitleBgCollapsed[3]);
+        style.setColor(ImGuiCol.Text, colText[0], colText[1], colText[2], colText[3]);
+        style.setColor(ImGuiCol.TextDisabled, colTextDisabled[0], colTextDisabled[1], colTextDisabled[2], colTextDisabled[3]);
+        style.setColor(ImGuiCol.Tab, colTab[0], colTab[1], colTab[2], colTab[3]);
+        style.setColor(ImGuiCol.TabHovered, colTabHovered[0], colTabHovered[1], colTabHovered[2], colTabHovered[3]);
+        style.setColor(ImGuiCol.TabActive, colTabActive[0], colTabActive[1], colTabActive[2], colTabActive[3]);
+        style.setColor(ImGuiCol.Button, colButton[0], colButton[1], colButton[2], colButton[3]);
+        style.setColor(ImGuiCol.ButtonHovered, colButtonHovered[0], colButtonHovered[1], colButtonHovered[2], colButtonHovered[3]);
+        style.setColor(ImGuiCol.ButtonActive, colButtonActive[0], colButtonActive[1], colButtonActive[2], colButtonActive[3]);
+        style.setColor(ImGuiCol.CheckMark, colCheckMark[0], colCheckMark[1], colCheckMark[2], colCheckMark[3]);
+        style.setColor(ImGuiCol.FrameBg, colFrameBg[0], colFrameBg[1], colFrameBg[2], colFrameBg[3]);
+        style.setColor(ImGuiCol.FrameBgHovered, colFrameBgHovered[0], colFrameBgHovered[1], colFrameBgHovered[2], colFrameBgHovered[3]);
+        style.setColor(ImGuiCol.FrameBgActive, colFrameBgActive[0], colFrameBgActive[1], colFrameBgActive[2], colFrameBgActive[3]);
 
         style.setWindowRounding(0.0f);
         style.setFrameRounding(0.0f);
@@ -156,22 +155,22 @@ public class ImGuiScreen extends Screen {
     }
 
     private void resetColorsToDefault() {
-        colWindowBg.set(30/255f, 30/255f, 35/255f, 180/255f);
-        colTitleBg.set(245/255f, 70/255f, 130/255f, 220/255f);
-        colTitleBgActive.set(255/255f, 90/255f, 150/255f, 220/255f);
-        colTitleBgCollapsed.set(245/255f, 70/255f, 130/255f, 160/255f);
-        colText.set(1f, 1f, 1f, 1f);
-        colTextDisabled.set(180/255f, 180/255f, 190/255f, 140/255f);
-        colTab.set(42/255f, 42/255f, 42/255f, 180/255f);
-        colTabHovered.set(60/255f, 60/255f, 65/255f, 200/255f);
-        colTabActive.set(50/255f, 50/255f, 55/255f, 220/255f);
-        colButton.set(70/255f, 70/255f, 80/255f, 160/255f);
-        colButtonHovered.set(90/255f, 90/255f, 100/255f, 180/255f);
-        colButtonActive.set(110/255f, 110/255f, 120/255f, 220/255f);
-        colCheckMark.set(245/255f, 70/255f, 130/255f, 1f);
-        colFrameBg.set(50/255f, 50/255f, 55/255f, 160/255f);
-        colFrameBgHovered.set(70/255f, 70/255f, 80/255f, 180/255f);
-        colFrameBgActive.set(90/255f, 90/255f, 100/255f, 220/255f);
+        colWindowBg[0] = 30/255f; colWindowBg[1] = 30/255f; colWindowBg[2] = 35/255f; colWindowBg[3] = 180/255f;
+        colTitleBg[0] = 245/255f; colTitleBg[1] = 70/255f; colTitleBg[2] = 130/255f; colTitleBg[3] = 220/255f;
+        colTitleBgActive[0] = 255/255f; colTitleBgActive[1] = 90/255f; colTitleBgActive[2] = 150/255f; colTitleBgActive[3] = 220/255f;
+        colTitleBgCollapsed[0] = 245/255f; colTitleBgCollapsed[1] = 70/255f; colTitleBgCollapsed[2] = 130/255f; colTitleBgCollapsed[3] = 160/255f;
+        colText[0] = 1f; colText[1] = 1f; colText[2] = 1f; colText[3] = 1f;
+        colTextDisabled[0] = 180/255f; colTextDisabled[1] = 180/255f; colTextDisabled[2] = 190/255f; colTextDisabled[3] = 140/255f;
+        colTab[0] = 42/255f; colTab[1] = 42/255f; colTab[2] = 42/255f; colTab[3] = 180/255f;
+        colTabHovered[0] = 60/255f; colTabHovered[1] = 60/255f; colTabHovered[2] = 65/255f; colTabHovered[3] = 200/255f;
+        colTabActive[0] = 50/255f; colTabActive[1] = 50/255f; colTabActive[2] = 55/255f; colTabActive[3] = 220/255f;
+        colButton[0] = 70/255f; colButton[1] = 70/255f; colButton[2] = 80/255f; colButton[3] = 160/255f;
+        colButtonHovered[0] = 90/255f; colButtonHovered[1] = 90/255f; colButtonHovered[2] = 100/255f; colButtonHovered[3] = 180/255f;
+        colButtonActive[0] = 110/255f; colButtonActive[1] = 110/255f; colButtonActive[2] = 120/255f; colButtonActive[3] = 220/255f;
+        colCheckMark[0] = 245/255f; colCheckMark[1] = 70/255f; colCheckMark[2] = 130/255f; colCheckMark[3] = 1f;
+        colFrameBg[0] = 50/255f; colFrameBg[1] = 50/255f; colFrameBg[2] = 55/255f; colFrameBg[3] = 160/255f;
+        colFrameBgHovered[0] = 70/255f; colFrameBgHovered[1] = 70/255f; colFrameBgHovered[2] = 80/255f; colFrameBgHovered[3] = 180/255f;
+        colFrameBgActive[0] = 90/255f; colFrameBgActive[1] = 90/255f; colFrameBgActive[2] = 100/255f; colFrameBgActive[3] = 220/255f;
     }
 
     @Override
