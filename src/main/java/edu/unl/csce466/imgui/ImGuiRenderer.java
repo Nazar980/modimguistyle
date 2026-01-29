@@ -34,13 +34,13 @@ public class ImGuiRenderer {
         ImGui.createContext();
         config.execute();
 
-        imGuiGlfw.init(Minecraft.getInstance().getWindow().getWindow(), false);
+        // Явно отключаем Viewports — это перекрывает любой дефолт
+        ImGui.getIO().setConfigFlags(ImGui.getIO().getConfigFlags() & ~ImGuiConfigFlags.ViewportsEnable);
 
-        // Отключаем Viewports — окна теперь строго внутри Minecraft
-        // ImGui.getIO().addConfigFlags(ImGuiConfigFlags.ViewportsEnable);  // ← УБРАНО
-
-        // Оставляем Docking, если хочешь вкладки (можно убрать, если не нужно)
+        // Docking оставляем, если хочешь вкладки внутри окна
         ImGui.getIO().addConfigFlags(ImGuiConfigFlags.DockingEnable);
+
+        imGuiGlfw.init(Minecraft.getInstance().getWindow().getWindow(), false);
 
         try {
             initGl3Renderer("#version 410 core");
@@ -111,7 +111,7 @@ public class ImGuiRenderer {
         newFrameGl3Renderer();
         ImGui.newFrame();
 
-        // Твой ImGui контент здесь
+        // Твой ImGui контент здесь (drawCalls)
         for (ImGuiCall drawCall : _drawCalls) {
             drawCall.execute();
         }
@@ -120,7 +120,6 @@ public class ImGuiRenderer {
         ImGui.render();
         imGuiGl.renderDrawData(Objects.requireNonNull(ImGui.getDrawData()));
 
-        // Блок для Viewports — убираем полностью
-        // if (ImGui.getIO().hasConfigFlags(ImGuiConfigFlags.ViewportsEnable)) { ... }
+        // Никакого кода для Viewports — он удалён
     }
 }
