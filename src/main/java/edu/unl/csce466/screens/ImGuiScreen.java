@@ -19,10 +19,10 @@ public class ImGuiScreen extends Screen {
     private final ImBoolean showDemo = new ImBoolean(false);
     private final ImBoolean showStyleEditor = new ImBoolean(false);
 
-    // Цвета теперь как float[] — именно то, что нужно для colorEdit4
+    // Цвета (розовый заголовок 245,70,130,220 везде)
     private final float[] colWindowBg = {30/255f, 30/255f, 35/255f, 180/255f};
-    private final float[] colTitleBg = {245/255f, 70/255f, 130/255f, 220/255f};
-    private final float[] colTitleBgActive = {255/255f, 90/255f, 150/255f, 220/255f};
+    private final float[] colTitleBg = {245/255f, 70/255f, 130/255f, 220/255f};  // ← Твой любимый розовый
+    private final float[] colTitleBgActive = {245/255f, 70/255f, 130/255f, 220/255f};  // То же самое для активного
     private final float[] colTitleBgCollapsed = {245/255f, 70/255f, 130/255f, 160/255f};
     private final float[] colText = {1f, 1f, 1f, 1f};
     private final float[] colTextDisabled = {180/255f, 180/255f, 190/255f, 140/255f};
@@ -32,7 +32,7 @@ public class ImGuiScreen extends Screen {
     private final float[] colButton = {70/255f, 70/255f, 80/255f, 160/255f};
     private final float[] colButtonHovered = {90/255f, 90/255f, 100/255f, 180/255f};
     private final float[] colButtonActive = {110/255f, 110/255f, 120/255f, 220/255f};
-    private final float[] colCheckMark = {245/255f, 70/255f, 130/255f, 1f};
+    private final float[] colCheckMark = {245/255f, 70/255f, 130/255f, 1f};  // Акцент на чекбоксах тоже розовый
     private final float[] colFrameBg = {50/255f, 50/255f, 55/255f, 160/255f};
     private final float[] colFrameBgHovered = {70/255f, 70/255f, 80/255f, 180/255f};
     private final float[] colFrameBgActive = {90/255f, 90/255f, 100/255f, 220/255f};
@@ -62,10 +62,12 @@ public class ImGuiScreen extends Screen {
                 ImGuiCond.FirstUseEver
             );
 
-            int flags = ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoResize;
+            // Убрали NoCollapse и NoResize — теперь можно сворачивать, закрывать и масштабировать окно
+            int flags = ImGuiWindowFlags.None;  // ← Всё разрешено по умолчанию
 
-            ImGui.begin("GD Mega Hack - Style Editor", flags);
+            ImGui.begin("GD Mega Hack", flags);  // ← Заголовок теперь с кнопками × и −
 
+            // Центрированный заголовок (текст по центру)
             String titleText = "GD Mega Hack";
             float textWidth = ImGui.calcTextSize(titleText).x;
             float titleBarWidth = ImGui.getWindowWidth() - ImGui.getStyle().getWindowPaddingX() * 2;
@@ -157,7 +159,7 @@ public class ImGuiScreen extends Screen {
     private void resetColorsToDefault() {
         colWindowBg[0] = 30/255f; colWindowBg[1] = 30/255f; colWindowBg[2] = 35/255f; colWindowBg[3] = 180/255f;
         colTitleBg[0] = 245/255f; colTitleBg[1] = 70/255f; colTitleBg[2] = 130/255f; colTitleBg[3] = 220/255f;
-        colTitleBgActive[0] = 255/255f; colTitleBgActive[1] = 90/255f; colTitleBgActive[2] = 150/255f; colTitleBgActive[3] = 220/255f;
+        colTitleBgActive[0] = 245/255f; colTitleBgActive[1] = 70/255f; colTitleBgActive[2] = 130/255f; colTitleBgActive[3] = 220/255f;
         colTitleBgCollapsed[0] = 245/255f; colTitleBgCollapsed[1] = 70/255f; colTitleBgCollapsed[2] = 130/255f; colTitleBgCollapsed[3] = 160/255f;
         colText[0] = 1f; colText[1] = 1f; colText[2] = 1f; colText[3] = 1f;
         colTextDisabled[0] = 180/255f; colTextDisabled[1] = 180/255f; colTextDisabled[2] = 190/255f; colTextDisabled[3] = 140/255f;
