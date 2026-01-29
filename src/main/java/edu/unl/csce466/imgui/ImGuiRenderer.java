@@ -24,7 +24,6 @@ public class ImGuiRenderer {
     private final ImGuiImplGl3 imGuiGl = new ImGuiImplGl3();
 
     private ImGuiRenderer() {
-        // Конструктор пустой
     }
 
     public void init() {
@@ -38,9 +37,9 @@ public class ImGuiRenderer {
         imGuiGlfw.init(Minecraft.getInstance().getWindow().getWindow(), false);
 
         // Отключаем Viewports — окна теперь строго внутри Minecraft
-        // ImGui.getIO().addConfigFlags(ImGuiConfigFlags.ViewportsEnable); // ← УБРАНО
+        // ImGui.getIO().addConfigFlags(ImGuiConfigFlags.ViewportsEnable);  // ← УБРАНО
 
-        // Оставляем Docking, если хочешь вкладки внутри окна (можно убрать)
+        // Оставляем Docking, если хочешь вкладки (можно убрать, если не нужно)
         ImGui.getIO().addConfigFlags(ImGuiConfigFlags.DockingEnable);
 
         try {
@@ -112,7 +111,7 @@ public class ImGuiRenderer {
         newFrameGl3Renderer();
         ImGui.newFrame();
 
-        // Здесь рендер твоего ImGui контента
+        // Твой ImGui контент здесь
         for (ImGuiCall drawCall : _drawCalls) {
             drawCall.execute();
         }
@@ -121,8 +120,7 @@ public class ImGuiRenderer {
         ImGui.render();
         imGuiGl.renderDrawData(Objects.requireNonNull(ImGui.getDrawData()));
 
-        // Эта часть нужна только если Viewports включены — теперь её можно убрать
+        // Блок для Viewports — убираем полностью
         // if (ImGui.getIO().hasConfigFlags(ImGuiConfigFlags.ViewportsEnable)) { ... }
-        // Убрано полностью
     }
 }
