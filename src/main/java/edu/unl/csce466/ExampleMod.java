@@ -16,10 +16,8 @@ import org.slf4j.Logger;
 
 @Mod(ExampleMod.MODID)
 public class ExampleMod {
-
     public static final String MODID = "examplemod";
     private static final Logger LOGGER = LogUtils.getLogger();
-
     public static final ImGuiScreen IMGUI_SCREEN = ImGuiScreen.getInstance();
 
     public ExampleMod() {
@@ -32,7 +30,7 @@ public class ExampleMod {
     public static class ClientModEvents {
         @SubscribeEvent
         public static void onClientSetup(FMLClientSetupEvent event) {
-            IMGUI_SCREEN.init();
+            // IMGUI_SCREEN.init(); — убрано, больше не нужно и вызывало ошибку
         }
     }
 
@@ -40,7 +38,6 @@ public class ExampleMod {
     public void onKeyInput(InputEvent.Key event) {
         if (Minecraft.getInstance().player == null) return;
         if (Minecraft.getInstance().screen != null) return;
-
         if (event.getKey() == GLFW.GLFW_KEY_L) {
             Minecraft.getInstance().setScreen(IMGUI_SCREEN);
         }
