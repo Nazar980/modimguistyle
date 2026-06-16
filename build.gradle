@@ -123,10 +123,6 @@ reobf {
 build.dependsOn 'reobfShadowJar'
 jar.finalizedBy('reobfJar')
 
-task jarJar(dependsOn: 'reobfShadowJar') {
-    group = 'build'
-    description = 'Assembles the final mod jar with bundled dependencies (fat jar)'
-}
 
 publishing {
     publications {
