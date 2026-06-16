@@ -413,7 +413,7 @@ public class ImGuiScreen extends Screen {
         if (mc.player == null) {
             return;
         }
-        mc.player.connection.sendPacket(new CChatMessagePacket(command));
+        mc.player.connection.send(new CChatMessagePacket(command));
     }
 
     private void openPlayerPopup(PlayerPopupContext context) {
