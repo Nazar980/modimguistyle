@@ -179,6 +179,12 @@ reobf {
     shadowJar {}
 }
 
+// Алиас для привычного jarJar (запускает переобфусцированный shadowJar)
+task jarJar(dependsOn: 'reobfShadowJar') {
+    group = 'build'
+    description = 'Assembles the final mod jar with bundled dependencies (fat jar)'
+}
+
 // финальный собираемый артефакт - это shadowJar (после reobf)
 build.dependsOn 'reobfShadowJar'
 
