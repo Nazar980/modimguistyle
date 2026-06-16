@@ -1,7 +1,7 @@
 package edu.unl.csce466.screens;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.authlib.GameProfile;
+import com.mojang.blaze3d.matrix.MatrixStack;
 import edu.unl.csce466.imgui.ImGuiRenderer;
 import imgui.ImGui;
 import imgui.ImGuiIO;
@@ -25,62 +25,68 @@ import java.util.List;
 
 public class ImGuiScreen extends Screen {
     private static ImGuiScreen INSTANCE = null;
-    private static final String POPUP_RULES = "SelectRulePopup";
-    private static final String POPUP_PLAYERS = "SelectPlayerPopup";
+    private static final String POPUP_RULES = "ВыборПравила";
+    private static final String POPUP_PLAYERS = "ВыборИгрока";
 
     // ---------- Цвета (розовый заголовок) ----------
-    private final float[] colWindowBg = {30/255f, 30/255f, 35/255f, 220/255f};
-    private final float[] colTitleBg = {245/255f, 70/255f, 130/255f, 220/255f};
-    private final float[] colTitleBgActive = {245/255f, 70/255f, 130/255f, 220/255f};
-    private final float[] colTitleBgCollapsed = {245/255f, 70/255f, 130/255f, 160/255f};
+    private final float[] colWindowBg = {30 / 255f, 30 / 255f, 35 / 255f, 220 / 255f};
+    private final float[] colTitleBg = {245 / 255f, 70 / 255f, 130 / 255f, 220 / 255f};
+    private final float[] colTitleBgActive = {245 / 255f, 70 / 255f, 130 / 255f, 220 / 255f};
+    private final float[] colTitleBgCollapsed = {245 / 255f, 70 / 255f, 130 / 255f, 160 / 255f};
     private final float[] colText = {1f, 1f, 1f, 1f};
-    private final float[] colTextDisabled = {180/255f, 180/255f, 190/255f, 140/255f};
-    private final float[] colTab = {42/255f, 42/255f, 42/255f, 180/255f};
-    private final float[] colTabHovered = {60/255f, 60/255f, 65/255f, 200/255f};
-    private final float[] colTabActive = {50/255f, 50/255f, 55/255f, 220/255f};
-    private final float[] colButton = {70/255f, 70/255f, 80/255f, 220/255f};
-    private final float[] colButtonHovered = {90/255f, 90/255f, 100/255f, 230/255f};
-    private final float[] colButtonActive = {110/255f, 110/255f, 120/255f, 240/255f};
-    private final float[] colCheckMark = {245/255f, 70/255f, 130/255f, 1f};
-    private final float[] colFrameBg = {50/255f, 50/255f, 55/255f, 220/255f};
-    private final float[] colFrameBgHovered = {70/255f, 70/255f, 80/255f, 230/255f};
-    private final float[] colFrameBgActive = {90/255f, 90/255f, 100/255f, 240/255f};
-    private final float[] colHeader = {90/255f, 40/255f, 60/255f, 220/255f};
-    private final float[] colHeaderHovered = {130/255f, 55/255f, 85/255f, 230/255f};
-    private final float[] colHeaderActive = {245/255f, 70/255f, 130/255f, 220/255f};
+    private final float[] colTextDisabled = {180 / 255f, 180 / 255f, 190 / 255f, 140 / 255f};
+    private final float[] colTab = {42 / 255f, 42 / 255f, 42 / 255f, 180 / 255f};
+    private final float[] colTabHovered = {60 / 255f, 60 / 255f, 65 / 255f, 200 / 255f};
+    private final float[] colTabActive = {50 / 255f, 50 / 255f, 55 / 255f, 220 / 255f};
+    private final float[] colButton = {70 / 255f, 70 / 255f, 80 / 255f, 220 / 255f};
+    private final float[] colButtonHovered = {90 / 255f, 90 / 255f, 100 / 255f, 230 / 255f};
+    private final float[] colButtonActive = {110 / 255f, 110 / 255f, 120 / 255f, 240 / 255f};
+    private final float[] colCheckMark = {245 / 255f, 70 / 255f, 130 / 255f, 1f};
+    private final float[] colFrameBg = {50 / 255f, 50 / 255f, 55 / 255f, 220 / 255f};
+    private final float[] colFrameBgHovered = {70 / 255f, 70 / 255f, 80 / 255f, 230 / 255f};
+    private final float[] colFrameBgActive = {90 / 255f, 90 / 255f, 100 / 255f, 240 / 255f};
+    private final float[] colHeader = {90 / 255f, 40 / 255f, 60 / 255f, 220 / 255f};
+    private final float[] colHeaderHovered = {130 / 255f, 55 / 255f, 85 / 255f, 230 / 255f};
+    private final float[] colHeaderActive = {245 / 255f, 70 / 255f, 130 / 255f, 220 / 255f};
 
     // ---------- Правила ----------
     private static class Rule {
-        final String id;        // "1.5", "1.5.1", ...
-        final String desc;      // "Использование читов"
-        final String duration;  // "14d" / "8d" / "5h" / "forever"
-        final String category;  // "main" или "game"
+        final String id;
+        final String desc;
+        final String duration;
+        final String category;
+
         Rule(String id, String desc, String duration, String category) {
-            this.id = id; this.desc = desc; this.duration = duration; this.category = category;
+            this.id = id;
+            this.desc = desc;
+            this.duration = duration;
+            this.category = category;
         }
+
         String commandReason() {
             return id + " [" + desc + "]";
         }
     }
 
     private static final List<Rule> RULES = new ArrayList<Rule>();
+
     static {
         // ---- Основные правила ----
-        RULES.add(new Rule("1.5",   "Использование читов",                                  "14d",       "main"));
-        RULES.add(new Rule("1.5.1", "Тим с читером",                                        "8d",        "main"));
-        RULES.add(new Rule("1.5.2", "Клан читеров (каждый)",                                "14d",       "main"));
-        RULES.add(new Rule("1.6",   "Признание в использовании читов",                     "12d",       "main"));
-        RULES.add(new Rule("1.7",   "Ник похож на ник администрации / ютуберов (навсегда)", "forever",   "main"));
-        RULES.add(new Rule("1.8",   "Использование DDoS пакетов",                           "28d",       "main"));
-        RULES.add(new Rule("1.8.1", "Попытка краша сервера (навсегда)",                     "forever",   "main"));
-        RULES.add(new Rule("1.9",   "Отказ от проверки",                                    "14d",       "main"));
-        RULES.add(new Rule("2.0",   "Задерживание модератора во время проверки",            "14d",       "main"));
-        RULES.add(new Rule("2.1",   "Выдача себя за модерацию проекта",                     "20d",       "main"));
-        RULES.add(new Rule("2.5",   "Больше 5 аккаунтов в бане (каждый новый аккаунт)",     "14d",       "main"));
-        RULES.add(new Rule("2.6",   "Обход бана (навсегда)",                                "forever",   "main"));
-        RULES.add(new Rule("2.7",   "Покупка доната через сторонние маркетплейсы (навсегда)","forever",   "main"));
+        RULES.add(new Rule("1.5", "Использование читов", "14d", "main"));
+        RULES.add(new Rule("1.5.1", "Тим с читером", "8d", "main"));
+        RULES.add(new Rule("1.5.2", "Клан читеров (каждый)", "14d", "main"));
+        RULES.add(new Rule("1.6", "Признание в использовании читов", "12d", "main"));
+        RULES.add(new Rule("1.7", "Ник похож на ник администрации / ютуберов (навсегда)", "forever", "main"));
+        RULES.add(new Rule("1.8", "Использование DDoS-пакетов", "28d", "main"));
+        RULES.add(new Rule("1.8.1", "Попытка краша сервера (навсегда)", "forever", "main"));
+        RULES.add(new Rule("1.9", "Отказ от проверки", "14d", "main"));
+        RULES.add(new Rule("2.0", "Задерживание модератора во время проверки", "14d", "main"));
+        RULES.add(new Rule("2.1", "Выдача себя за модерацию проекта", "20d", "main"));
+        RULES.add(new Rule("2.5", "Больше 5 аккаунтов в бане (каждый новый аккаунт)", "14d", "main"));
+        RULES.add(new Rule("2.6", "Обход бана (навсегда)", "forever", "main"));
+        RULES.add(new Rule("2.7", "Покупка доната через сторонние маркетплейсы (навсегда)", "forever", "main"));
         // ---- Игровые правила ----
-        RULES.add(new Rule("2.8",   "Заливание дома лавой/водой",                           "5h",        "game"));
+        RULES.add(new Rule("2.8", "Заливание дома лавой/водой", "5h", "game"));
     }
 
     // ---------- Состояние UI ----------
@@ -91,7 +97,7 @@ public class ImGuiScreen extends Screen {
     private String statusMessage = "";
     private float statusTimer = 0f;
 
-    // Окно Style Editor / Demo — оставляем в Tools меню
+    // Окно Style Editor / Demo оставляем в меню "Инструменты"
     private final ImBoolean showStyleEditor = new ImBoolean(false);
     private final ImBoolean showDemo = new ImBoolean(false);
 
@@ -101,7 +107,7 @@ public class ImGuiScreen extends Screen {
     }
 
     private ImGuiScreen() {
-        super(new StringTextComponent("Ban Assistant"));
+        super(new StringTextComponent("Помощник банов"));
     }
 
     @Override
@@ -126,43 +132,43 @@ public class ImGuiScreen extends Screen {
             );
 
             int flags = ImGuiWindowFlags.None;
-            ImGui.begin("Ban Assistant", flags);
+            ImGui.begin("Помощник банов", flags);
 
-            // ==== Менюбар (Tools -> Style Editor / Demo) ====
+            // ==== Менюбар (Инструменты -> Редактор цветов / Демо) ====
             if (ImGui.beginMainMenuBar()) {
-                if (ImGui.beginMenu("Tools")) {
-                    if (ImGui.menuItem("Style Color Editor", "", showStyleEditor.get())) {
+                if (ImGui.beginMenu("Инструменты")) {
+                    if (ImGui.menuItem("Редактор цветов стиля", "", showStyleEditor.get())) {
                         showStyleEditor.set(!showStyleEditor.get());
                     }
-                    if (ImGui.menuItem("Show ImGui Demo Window", "", showDemo.get())) {
+                    if (ImGui.menuItem("Показать демо-окно ImGui", "", showDemo.get())) {
                         showDemo.set(!showDemo.get());
                     }
                     ImGui.endMenu();
                 }
-                if (ImGui.beginMenu("Help")) {
-                    ImGui.text("Ban Assistant for Minecraft 1.16.5");
-                    ImGui.textWrapped("1. Select rule → 2. Select online player OR type offline name → 3. Press Ban player.");
+                if (ImGui.beginMenu("Помощь")) {
+                    ImGui.text("Помощник банов для Minecraft 1.16.5");
+                    ImGui.textWrapped("1. Выбери правило -> 2. Выбери онлайн-игрока ИЛИ введи ник вручную -> 3. Нажми кнопку 'Забанить игрока'.");
                     ImGui.endMenu();
                 }
                 ImGui.endMainMenuBar();
             }
 
             ImGui.spacing();
-            ImGui.textColored(245/255f, 70/255f, 130/255f, 1f, "Ban Assistant");
+            ImGui.textColored(245 / 255f, 70 / 255f, 130 / 255f, 1f, "Помощник банов");
             ImGui.separator();
             ImGui.spacing();
 
             // ==== Блок 1: Выбор правила ====
-            ImGui.text("1) Rule:");
+            ImGui.text("1) Правило:");
             if (selectedRule == null) {
-                ImGui.textDisabled("  (no rule selected)");
+                ImGui.textDisabled("  (правило не выбрано)");
             } else {
                 ImGui.bulletText(selectedRule.id + " — " + selectedRule.desc);
-                ImGui.bulletText("Duration: " + ("forever".equals(selectedRule.duration)
-                        ? "PERMANENT BAN"
+                ImGui.bulletText("Длительность: " + ("forever".equals(selectedRule.duration)
+                        ? "ПОСТОЯННЫЙ БАН"
                         : selectedRule.duration));
             }
-            if (ImGui.button("Select rule...")) {
+            if (ImGui.button("Выбрать правило...")) {
                 ImGui.openPopup(POPUP_RULES);
             }
             drawRulePopup();
@@ -172,29 +178,29 @@ public class ImGuiScreen extends Screen {
             ImGui.spacing();
 
             // ==== Блок 2: Выбор игрока ====
-            ImGui.text("2) Player:");
+            ImGui.text("2) Игрок:");
 
             // Режим онлайн / оффлайн
-            if (ImGui.radioButton("Online player (from tab list)", !useOffline)) {
+            if (ImGui.radioButton("Онлайн-игрок (из таб-листа)", !useOffline)) {
                 useOffline = false;
             }
-            if (ImGui.radioButton("Offline / manual nickname", useOffline)) {
+            if (ImGui.radioButton("Оффлайн / ник вручную", useOffline)) {
                 useOffline = true;
             }
             ImGui.spacing();
 
             if (!useOffline) {
                 if (selectedPlayerName.isEmpty()) {
-                    ImGui.textDisabled("  (no player selected)");
+                    ImGui.textDisabled("  (игрок не выбран)");
                 } else {
-                    ImGui.bulletText("Selected: " + selectedPlayerName);
+                    ImGui.bulletText("Выбран: " + selectedPlayerName);
                 }
-                if (ImGui.button("Select player...")) {
+                if (ImGui.button("Выбрать игрока...")) {
                     ImGui.openPopup(POPUP_PLAYERS);
                 }
                 drawPlayerPopup();
             } else {
-                ImGui.text("Nickname:");
+                ImGui.text("Ник:");
                 ImGui.setNextItemWidth(-1);
                 ImGui.inputText("##offlinename", offlineNameBuf);
             }
@@ -204,19 +210,19 @@ public class ImGuiScreen extends Screen {
             ImGui.spacing();
 
             // ==== Блок 3: Бан ====
-            ImGui.text("3) Ban:");
+            ImGui.text("3) Бан:");
             ImGui.spacing();
 
             String targetName = useOffline ? offlineNameBuf.get().trim() : selectedPlayerName;
             boolean canBan = selectedRule != null && !targetName.isEmpty() && mc.player != null;
 
             if (!canBan) {
-                // Делаем кнопку визуально "серой", если условия не выполнены
-                ImGui.pushStyleColor(ImGuiCol.Button,        colButton[0] * 0.6f, colButton[1] * 0.6f, colButton[2] * 0.6f, colButton[3]);
+                // Делаем кнопку визуально серой, если условия не выполнены
+                ImGui.pushStyleColor(ImGuiCol.Button, colButton[0] * 0.6f, colButton[1] * 0.6f, colButton[2] * 0.6f, colButton[3]);
                 ImGui.pushStyleColor(ImGuiCol.ButtonHovered, colButton[0] * 0.6f, colButton[1] * 0.6f, colButton[2] * 0.6f, colButton[3]);
-                ImGui.pushStyleColor(ImGuiCol.ButtonActive,  colButton[0] * 0.6f, colButton[1] * 0.6f, colButton[2] * 0.6f, colButton[3]);
+                ImGui.pushStyleColor(ImGuiCol.ButtonActive, colButton[0] * 0.6f, colButton[1] * 0.6f, colButton[2] * 0.6f, colButton[3]);
             }
-            if (ImGui.button("Ban player", -1, 36)) {
+            if (ImGui.button("Забанить игрока", -1, 36)) {
                 if (canBan) {
                     executeBan(targetName);
                 }
@@ -224,14 +230,14 @@ public class ImGuiScreen extends Screen {
             if (!canBan) {
                 ImGui.popStyleColor(3);
                 if (ImGui.isItemHovered()) {
-                    ImGui.setTooltip("Select a rule AND a player (online or offline) first.");
+                    ImGui.setTooltip("Сначала выбери правило И игрока (онлайн или оффлайн).");
                 }
             }
 
             // Предпросмотр команды
             if (canBan) {
                 ImGui.spacing();
-                ImGui.textWrapped("Command to execute:");
+                ImGui.textWrapped("Команда для выполнения:");
                 ImGui.textColored(0.4f, 0.8f, 1f, 1f, buildCommand(targetName));
             }
 
@@ -246,7 +252,7 @@ public class ImGuiScreen extends Screen {
 
             ImGui.end();
 
-            // ==== Дочерние окна ====
+            // ==== Дополнительные окна ====
             if (showStyleEditor.get()) {
                 drawStyleEditor();
             }
@@ -260,15 +266,14 @@ public class ImGuiScreen extends Screen {
     private void drawRulePopup() {
         ImGui.setNextWindowSize(520, 480, ImGuiCond.Appearing);
         if (ImGui.beginPopupModal(POPUP_RULES)) {
-            ImGui.text("Select a rule for the ban:");
+            ImGui.text("Выберите правило для бана:");
             ImGui.separator();
 
             // Группируем по категориям
             if (ImGui.collapsingHeader("Основные правила", ImGuiSelectableFlags.DontClosePopups)) {
                 for (Rule r : RULES) {
                     if (!"main".equals(r.category)) continue;
-                    String label = r.id + " — " + r.desc
-                            + "  (" + ("forever".equals(r.duration) ? "PERM" : r.duration) + ")";
+                    String label = r.id + " — " + r.desc + "  (" + ("forever".equals(r.duration) ? "ПЕРМ" : r.duration) + ")";
                     if (ImGui.selectable(label)) {
                         selectedRule = r;
                         ImGui.closeCurrentPopup();
@@ -278,8 +283,7 @@ public class ImGuiScreen extends Screen {
             if (ImGui.collapsingHeader("Игровые правила", ImGuiSelectableFlags.DontClosePopups)) {
                 for (Rule r : RULES) {
                     if (!"game".equals(r.category)) continue;
-                    String label = r.id + " — " + r.desc
-                            + "  (" + r.duration + ")";
+                    String label = r.id + " — " + r.desc + "  (" + r.duration + ")";
                     if (ImGui.selectable(label)) {
                         selectedRule = r;
                         ImGui.closeCurrentPopup();
@@ -289,7 +293,7 @@ public class ImGuiScreen extends Screen {
 
             ImGui.spacing();
             ImGui.separator();
-            if (ImGui.button("Cancel", -1, 0)) {
+            if (ImGui.button("Отмена", -1, 0)) {
                 ImGui.closeCurrentPopup();
             }
             ImGui.endPopup();
@@ -301,7 +305,7 @@ public class ImGuiScreen extends Screen {
         ImGui.setNextWindowSize(340, 400, ImGuiCond.Appearing);
         if (ImGui.beginPopupModal(POPUP_PLAYERS)) {
             Minecraft mc = Minecraft.getInstance();
-            ImGui.text("Online players:");
+            ImGui.text("Онлайн-игроки:");
             ImGui.separator();
 
             List<NetworkPlayerInfo> players = new ArrayList<NetworkPlayerInfo>();
@@ -312,7 +316,7 @@ public class ImGuiScreen extends Screen {
             }
 
             if (players.isEmpty()) {
-                ImGui.textDisabled("(no online players or not connected)");
+                ImGui.textDisabled("(онлайн-игроки не найдены или нет подключения)");
             } else {
                 ImGui.beginChild("playersList", 0, -40, true);
                 for (NetworkPlayerInfo info : players) {
@@ -329,7 +333,7 @@ public class ImGuiScreen extends Screen {
                 ImGui.endChild();
             }
 
-            if (ImGui.button("Cancel", -1, 0)) {
+            if (ImGui.button("Отмена", -1, 0)) {
                 ImGui.closeCurrentPopup();
             }
             ImGui.endPopup();
@@ -348,18 +352,17 @@ public class ImGuiScreen extends Screen {
     private void executeBan(String targetName) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) {
-            setStatus("Error: no local player.");
+            setStatus("Ошибка: локальный игрок не найден.");
             return;
         }
         String cmd = buildCommand(targetName);
         if (cmd.isEmpty()) {
-            setStatus("Error: nothing to execute.");
+            setStatus("Ошибка: нечего выполнять.");
             return;
         }
-        // Отправляем команду как клиент от своего имени (как если бы игрок ввёл её в чат)
-        // 1.16.5: метод называется send(), не sendPacket()
+        // Отправляем команду от имени клиента, как если бы игрок ввёл её в чат
         mc.player.connection.send(new CChatMessagePacket(cmd));
-        setStatus("Ban command sent: " + cmd);
+        setStatus("Команда бана отправлена: " + cmd);
     }
 
     private void setStatus(String msg) {
@@ -367,10 +370,10 @@ public class ImGuiScreen extends Screen {
         statusTimer = 6f;
     }
 
-    // ================= Окно Style Color Editor =================
+    // ================= Окно редактора цветов =================
     private void drawStyleEditor() {
-        ImGui.begin("Style Color Editor", showStyleEditor, ImGuiWindowFlags.NoCollapse);
-        ImGui.text("Change menu colors live (apply immediately):");
+        ImGui.begin("Редактор цветов стиля", showStyleEditor, ImGuiWindowFlags.NoCollapse);
+        ImGui.text("Меняй цвета меню прямо на лету (изменения применяются сразу):");
         ImGui.separator();
 
         ImGui.colorEdit4("WindowBg", colWindowBg);
@@ -399,7 +402,7 @@ public class ImGuiScreen extends Screen {
 
         ImGui.spacing();
         ImGui.separator();
-        if (ImGui.button("Reset to Default (pink title)")) {
+        if (ImGui.button("Сбросить к дефолту (розовый заголовок)")) {
             resetColorsToDefault();
         }
         ImGui.end();
@@ -441,24 +444,81 @@ public class ImGuiScreen extends Screen {
     }
 
     private void resetColorsToDefault() {
-        colWindowBg[0] = 30/255f; colWindowBg[1] = 30/255f; colWindowBg[2] = 35/255f; colWindowBg[3] = 220/255f;
-        colTitleBg[0] = 245/255f; colTitleBg[1] = 70/255f; colTitleBg[2] = 130/255f; colTitleBg[3] = 220/255f;
-        colTitleBgActive[0] = 245/255f; colTitleBgActive[1] = 70/255f; colTitleBgActive[2] = 130/255f; colTitleBgActive[3] = 220/255f;
-        colTitleBgCollapsed[0] = 245/255f; colTitleBgCollapsed[1] = 70/255f; colTitleBgCollapsed[2] = 130/255f; colTitleBgCollapsed[3] = 160/255f;
-        colText[0] = 1f; colText[1] = 1f; colText[2] = 1f; colText[3] = 1f;
-        colTextDisabled[0] = 180/255f; colTextDisabled[1] = 180/255f; colTextDisabled[2] = 190/255f; colTextDisabled[3] = 140/255f;
-        colTab[0] = 42/255f; colTab[1] = 42/255f; colTab[2] = 42/255f; colTab[3] = 180/255f;
-        colTabHovered[0] = 60/255f; colTabHovered[1] = 60/255f; colTabHovered[2] = 65/255f; colTabHovered[3] = 200/255f;
-        colTabActive[0] = 50/255f; colTabActive[1] = 50/255f; colTabActive[2] = 55/255f; colTabActive[3] = 220/255f;
-        colButton[0] = 70/255f; colButton[1] = 70/255f; colButton[2] = 80/255f; colButton[3] = 220/255f;
-        colButtonHovered[0] = 90/255f; colButtonHovered[1] = 90/255f; colButtonHovered[2] = 100/255f; colButtonHovered[3] = 230/255f;
-        colButtonActive[0] = 110/255f; colButtonActive[1] = 110/255f; colButtonActive[2] = 120/255f; colButtonActive[3] = 240/255f;
-        colCheckMark[0] = 245/255f; colCheckMark[1] = 70/255f; colCheckMark[2] = 130/255f; colCheckMark[3] = 1f;
-        colFrameBg[0] = 50/255f; colFrameBg[1] = 50/255f; colFrameBg[2] = 55/255f; colFrameBg[3] = 220/255f;
-        colFrameBgHovered[0] = 70/255f; colFrameBgHovered[1] = 70/255f; colFrameBgHovered[2] = 80/255f; colFrameBgHovered[3] = 230/255f;
-        colFrameBgActive[0] = 90/255f; colFrameBgActive[1] = 90/255f; colFrameBgActive[2] = 100/255f; colFrameBgActive[3] = 240/255f;
-        colHeader[0] = 90/255f; colHeader[1] = 40/255f; colHeader[2] = 60/255f; colHeader[3] = 220/255f;
-        colHeaderHovered[0] = 130/255f; colHeaderHovered[1] = 55/255f; colHeaderHovered[2] = 85/255f; colHeaderHovered[3] = 230/255f;
-        colHeaderActive[0] = 245/255f; colHeaderActive[1] = 70/255f; colHeaderActive[2] = 130/255f; colHeaderActive[3] = 220/255f;
+        colWindowBg[0] = 30 / 255f;
+        colWindowBg[1] = 30 / 255f;
+        colWindowBg[2] = 35 / 255f;
+        colWindowBg[3] = 220 / 255f;
+        colTitleBg[0] = 245 / 255f;
+        colTitleBg[1] = 70 / 255f;
+        colTitleBg[2] = 130 / 255f;
+        colTitleBg[3] = 220 / 255f;
+        colTitleBgActive[0] = 245 / 255f;
+        colTitleBgActive[1] = 70 / 255f;
+        colTitleBgActive[2] = 130 / 255f;
+        colTitleBgActive[3] = 220 / 255f;
+        colTitleBgCollapsed[0] = 245 / 255f;
+        colTitleBgCollapsed[1] = 70 / 255f;
+        colTitleBgCollapsed[2] = 130 / 255f;
+        colTitleBgCollapsed[3] = 160 / 255f;
+        colText[0] = 1f;
+        colText[1] = 1f;
+        colText[2] = 1f;
+        colText[3] = 1f;
+        colTextDisabled[0] = 180 / 255f;
+        colTextDisabled[1] = 180 / 255f;
+        colTextDisabled[2] = 190 / 255f;
+        colTextDisabled[3] = 140 / 255f;
+        colTab[0] = 42 / 255f;
+        colTab[1] = 42 / 255f;
+        colTab[2] = 42 / 255f;
+        colTab[3] = 180 / 255f;
+        colTabHovered[0] = 60 / 255f;
+        colTabHovered[1] = 60 / 255f;
+        colTabHovered[2] = 65 / 255f;
+        colTabHovered[3] = 200 / 255f;
+        colTabActive[0] = 50 / 255f;
+        colTabActive[1] = 50 / 255f;
+        colTabActive[2] = 55 / 255f;
+        colTabActive[3] = 220 / 255f;
+        colButton[0] = 70 / 255f;
+        colButton[1] = 70 / 255f;
+        colButton[2] = 80 / 255f;
+        colButton[3] = 220 / 255f;
+        colButtonHovered[0] = 90 / 255f;
+        colButtonHovered[1] = 90 / 255f;
+        colButtonHovered[2] = 100 / 255f;
+        colButtonHovered[3] = 230 / 255f;
+        colButtonActive[0] = 110 / 255f;
+        colButtonActive[1] = 110 / 255f;
+        colButtonActive[2] = 120 / 255f;
+        colButtonActive[3] = 240 / 255f;
+        colCheckMark[0] = 245 / 255f;
+        colCheckMark[1] = 70 / 255f;
+        colCheckMark[2] = 130 / 255f;
+        colCheckMark[3] = 1f;
+        colFrameBg[0] = 50 / 255f;
+        colFrameBg[1] = 50 / 255f;
+        colFrameBg[2] = 55 / 255f;
+        colFrameBg[3] = 220 / 255f;
+        colFrameBgHovered[0] = 70 / 255f;
+        colFrameBgHovered[1] = 70 / 255f;
+        colFrameBgHovered[2] = 80 / 255f;
+        colFrameBgHovered[3] = 230 / 255f;
+        colFrameBgActive[0] = 90 / 255f;
+        colFrameBgActive[1] = 90 / 255f;
+        colFrameBgActive[2] = 100 / 255f;
+        colFrameBgActive[3] = 240 / 255f;
+        colHeader[0] = 90 / 255f;
+        colHeader[1] = 40 / 255f;
+        colHeader[2] = 60 / 255f;
+        colHeader[3] = 220 / 255f;
+        colHeaderHovered[0] = 130 / 255f;
+        colHeaderHovered[1] = 55 / 255f;
+        colHeaderHovered[2] = 85 / 255f;
+        colHeaderHovered[3] = 230 / 255f;
+        colHeaderActive[0] = 245 / 255f;
+        colHeaderActive[1] = 70 / 255f;
+        colHeaderActive[2] = 130 / 255f;
+        colHeaderActive[3] = 220 / 255f;
     }
 }
