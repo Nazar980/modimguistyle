@@ -74,31 +74,69 @@ public class ImGuiScreen extends Screen {
 
             ImGui.begin("GD Mega Hack", flags);  // <- Родной заголовок с кнопками x и -
 
-            ImGui.separator();
-            ImGui.text("Welcome to GD Mega Hack!");
-            ImGui.textWrapped("Press L to open/close. This is a placeholder layout; " +
-                    "toggles for cheats (Fly, KillAura, ESP, Fullbright, ...) can be added below.");
-            ImGui.separator();
+            // ====== Главное меню (в стиле ImGui Demo: Menu / Examples / Tools) ======
+            if (ImGui.beginMainMenuBar()) {
 
-            // ===== Test =====
-            if (ImGui.collapsingHeader("Test")) {
-                ImGui.indent();
-                if (ImGui.button("Click me")) {
-                    buttonClicked = true;
+                // ---- Menu ----
+                if (ImGui.beginMenu("Menu")) {
+                    if (ImGui.menuItem("Close menu", "ESC")) {
+                        // Закрытие меню по клику/ESC (так же, как крестик в title bar)
+                        Minecraft.getInstance().setScreen(null);
+                    }
+                    ImGui.separator();
+                    if (ImGui.menuItem("Exit")) {
+                        Minecraft.getInstance().stop();
+                    }
+                    ImGui.endMenu();
                 }
-                if (buttonClicked) {
-                    ImGui.sameLine();
-                    ImGui.text("Button clicked!");
+
+                // ---- Examples ----
+                if (ImGui.beginMenu("Examples")) {
+                    // Просто пример чекнутого/нечекнутого пункта в меню
+                    ImGui.menuItem("Test button visible", "", true);
+                    ImGui.menuItem("Coming soon: tabs", "", false);
+                    ImGui.menuItem("Coming soon: sliders", "", false);
+                    ImGui.endMenu();
                 }
-                ImGui.unindent();
+
+                // ---- Tools ----
+                if (ImGui.beginMenu("Tools")) {
+                    if (ImGui.menuItem("Style Color Editor", "", showStyleEditor.get())) {
+                        showStyleEditor.set(!showStyleEditor.get());
+                    }
+                    if (ImGui.menuItem("Show ImGui Demo Window", "", showDemo.get())) {
+                        showDemo.set(!showDemo.get());
+                    }
+                    ImGui.endMenu();
+                }
+
+                // ---- Help (чтобы справа не пусто) ----
+                // Чтобы прижать Help вправо — в ImGui это делается через sameLine()+invisibleButton,
+                // но для простоты пока оставим слева.
+                if (ImGui.beginMenu("Help")) {
+                    ImGui.text("GD Mega Hack for 1.16.5");
+                    ImGui.text("ImGui rendering via imgui-java");
+                    ImGui.separator();
+                    ImGui.textWrapped("Press L in-game to open/close this menu.");
+                    ImGui.endMenu();
+                }
+
+                ImGui.endMainMenuBar();
             }
 
-            // ===== Tools =====
-            if (ImGui.collapsingHeader("Tools")) {
-                ImGui.indent();
-                ImGui.checkbox("Style Color Editor", showStyleEditor);
-                ImGui.checkbox("Show ImGui Demo Window", showDemo);
-                ImGui.unindent();
+            // ====== Основная область окна ======
+            ImGui.text("Welcome to GD Mega Hack!");
+            ImGui.textWrapped("Use the menu bar at the top to open the Style Color Editor, the ImGui Demo window, " +
+                    "or close this menu. Toggles for cheats (Fly, KillAura, ESP, Fullbright, ...) can be added here.");
+            ImGui.separator();
+
+            ImGui.text("Test area:");
+            if (ImGui.button("Click me")) {
+                buttonClicked = true;
+            }
+            if (buttonClicked) {
+                ImGui.sameLine();
+                ImGui.text("Button clicked!");
             }
 
             ImGui.end();
