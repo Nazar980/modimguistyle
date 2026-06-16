@@ -146,19 +146,12 @@ public class ImGuiRenderer {
     // ================= Загрузка шрифта с кириллицей =================
     private void loadCyrillicFont() {
         ImGuiIO io = ImGui.getIO();
-        System.out.println("[Ban Assistant] === Font Loading Debug ===");
-        System.out.println("[Ban Assistant] Available glyphRanges methods:");
-        try {
-            short[] cyrillic = io.getFonts().getGlyphRangesCyrillic();
-            System.out.println("[Ban Assistant] ✓ getGlyphRangesCyrillic exists, size: " + cyrillic.length);
-        } catch (Exception e) {
-            System.out.println("[Ban Assistant] ✗ getGlyphRangesCyrillic failed: " + e.getMessage());
-        }
+        System.out.println("[Ban Assistant] === Font Loading Start ===");
 
         boolean fontLoaded = false;
         
-        // ===== Попытка 1: системный шрифт напрямую (самый надёжный способ) =====
-        System.out.println("[Ban Assistant] === Trying system fonts (Attempt 1) ===");
+        // ===== Системный шрифт =====
+        System.out.println("[Ban Assistant] Searching for system fonts...");
         String[] fontPaths = new String[] {
             "C:\\Windows\\Fonts\\arial.ttf",
             "C:\\Windows\\Fonts\\segoeui.ttf",
@@ -170,41 +163,59 @@ public class ImGuiRenderer {
         for (String fontPath : fontPaths) {
             try {
                 File f = new File(fontPath);
-                System.out.println("[Ban Assistant] Checking: " + fontPath + " (exists: " + f.exists() + ")");
                 if (f.exists() && f.canRead()) {
-                    System.out.println("[Ban Assistant] Attempting to load: " + fontPath);
-                    // Пробуем разные сигнатуры метода addFontFromFileTTF
+                    System.out.println("[Ban Assistant] Found: " + fontPath + " - loading...");
+                    
+                    // Пытаемся загрузить с явным диапазоном кириллицы (Unicode 0x0400-0x04FF)
+                    // Создаём массив с диапазонами: начало, конец, 0 (конец списка)
+                    short[] cyrillicRanges = new short[] {
+                        0x0020, 0x007E,  // ASCII (обычные символы)
+                        0x0400, 0x044F,  // Кириллица (русские буквы)
+                        0
+                    };
+                    
                     try {
-                        // Сигнатура 1: (String, float, ImFontConfig, short[])
-                        short[] cyrillic = io.getFonts().getGlyphRangesCyrillic();
-                        io.getFonts().addFontFromFileTTF(fontPath, 16.0f, null, cyrillic);
+                        // Пытаемся загрузить с явным указанием диапазонов
+                        io.getFonts().addFontFromFileTTF(fontPath, 16.0f, null, cyrillicRanges);
                         fontLoaded = true;
-                        System.out.println("[Ban Assistant] ✓✓✓ SUCCESS: Loaded with sig1 (with cyrillic): " + fontPath);
+                        System.out.println("[Ban Assistant] ✓✓✓ SUCCESS: Font loaded with Cyrillic ranges!");
+                        System.out.println("[Ban Assistant] Font: " + fontPath);
                         break;
                     } catch (Exception e1) {
-                        System.out.println("[Ban Assistant] Sig1 failed: " + e1.getClass().getSimpleName());
+                        System.out.println("[Ban Assistant] Method with ranges failed (" + e1.getClass().getSimpleName() + ")");
+                        
                         try {
-                            // Сигнатура 2: (String, float)
+                            // Fallback: загружаем без явного указания диапазонов
                             io.getFonts().addFontFromFileTTF(fontPath, 16.0f);
                             fontLoaded = true;
-                            System.out.println("[Ban Assistant] ✓✓ PARTIAL: Loaded with sig2 (no cyrillic specified): " + fontPath);
+                            System.out.println("[Ban Assistant] ⚠ PARTIAL: Font loaded without Cyrillic specification");
+                            System.out.println("[Ban Assistant] Font: " + fontPath);
                             break;
                         } catch (Exception e2) {
-                            System.out.println("[Ban Assistant] Sig2 also failed: " + e2.getClass().getSimpleName());
+                            System.out.println("[Ban Assistant] Method without ranges also failed");
                         }
                     }
                 }
             } catch (Exception e) {
-                System.out.println("[Ban Assistant] Exception checking " + fontPath + ": " + e.getMessage());
+                // Молчим, переходим к следующему
             }
         }
 
+        // ===== Если ничего не загрузилось, используем встроенный шрифт =====
         if (!fontLoaded) {
-            System.out.println("[Ban Assistant] ✗ Could not load any system font with Cyrillic support.");
-            System.out.println("[Ban Assistant] ImGui will use built-in font (ASCII only - text will show as ?????)");
-            System.out.println("[Ban Assistant] SOLUTION: Make sure your system has fonts like Arial, DejaVu Sans, or Liberation Sans");
+            System.out.println("[Ban Assistant] ✗✗✗ FAILED: No suitable font found");
+            System.out.println("[Ban Assistant] ImGui will use built-in ASCII font (Cyrillic will show as ?????)");
+            System.out.println("[Ban Assistant]");
+            System.out.println("[Ban Assistant] === SOLUTION ===");
+            System.out.println("[Ban Assistant] 1. Make sure your system has fonts with Cyrillic:");
+            System.out.println("[Ban Assistant]    - Windows: Arial, Segoe UI (usually pre-installed)");
+            System.out.println("[Ban Assistant]    - Linux: sudo apt install fonts-liberation fonts-dejavu");
+            System.out.println("[Ban Assistant]    - macOS: Usually has Arial pre-installed");
+            System.out.println("[Ban Assistant] 2. OR place Roboto-Regular.ttf in:");
+            System.out.println("[Ban Assistant]    src/main/resources/assets/csce466/fonts/Roboto-Regular.ttf");
+            System.out.println("[Ban Assistant]");
         } else {
-            System.out.println("[Ban Assistant] === Font Load Successful ===");
+            System.out.println("[Ban Assistant] === Font loaded successfully ===");
         }
     }
 }
