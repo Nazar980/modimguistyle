@@ -45,10 +45,16 @@ public class ImGuiRenderer {
         // Явно отключаем Viewports - это перекрывает любой дефолт
         ImGui.getIO().setConfigFlags(ImGui.getIO().getConfigFlags() & ~ImGuiConfigFlags.ViewportsEnable);
 
-        // Docking оставляем, если хочешь вкладки внутри окна
+        // Docking оставляем (для вкладок внутри окна)
         ImGui.getIO().addConfigFlags(ImGuiConfigFlags.DockingEnable);
 
-        imGuiGlfw.init(Minecraft.getInstance().getWindow().getWindow(), false);
+        // installCallbacks = true: ImGui сам ставит GLFW-коллбэки (key / char / mouse / scroll / cursorpos)
+        // и автоматически вызывает предыдущие (майнкрафтовские) через встроенную цепочку.
+        // Это единственный нормальный способ, чтобы:
+        //   1) работал текстовый ввод в полях ImGui (буквы, заглавные, Shift+<key>, кириллица, backspace, Ctrl+V),
+        //   2) не ломались клавиатурные/мышиные события Minecraft когда ImGui не открыт,
+        //   3) не приходилось вручную прокидывать все события через Forge-ивенты.
+        imGuiGlfw.init(Minecraft.getInstance().getWindow().getWindow(), true);
 
         try {
             initGl3Renderer("#version 410 core");
