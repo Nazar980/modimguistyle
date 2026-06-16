@@ -64,8 +64,15 @@ public class ImGuiRenderer {
         // ===== Загрузка шрифта с поддержкой кириллицы =====
         // Dear ImGui по умолчанию использует встроенный шрифт, который содержит только ASCII.
         // Для русского текста нужно явно добавить шрифт TTF с поддержкой кириллицы.
-        // Ищем системный шрифт (Windows / Linux / macOS) или используем встроенный Roboto.
         loadCyrillicFont();
+        
+        // ВАЖНО: после загрузки шрифтов нужно пересобрать атлас текстур!
+        // Это критично, иначе новые шрифты не будут работать.
+        try {
+            ImGui.getIO().getFonts().build();
+        } catch (Exception e) {
+            System.out.println("[Ban Assistant] Warning: could not rebuild font atlas: " + e.getMessage());
+        }
 
         try {
             initGl3Renderer("#version 410 core");
@@ -176,40 +183,57 @@ public class ImGuiRenderer {
             short[] cyrillic = io.getFonts().getGlyphRangesCyrillic();
             io.getFonts().addFontFromFileTTF(tempFontPath, 16.0f, null, cyrillic);
             fontLoaded = true;
-            System.out.println("[Ban Assistant] Loaded Cyrillic font from assets: " + tempFontPath);
+            System.out.println("[Ban Assistant] ✓ Loaded Cyrillic font from assets: " + tempFontPath);
         } catch (Exception e) {
-            System.out.println("[Ban Assistant] Could not load font from assets: " + e.getMessage());
+            System.out.println("[Ban Assistant] ✗ Could not load font from assets (" + e.getClass().getSimpleName() + ": " + e.getMessage() + ")");
         }
 
         // ===== Вариант 2: если ассетс не найден, пробуем системные шрифты =====
         if (!fontLoaded) {
+            System.out.println("[Ban Assistant] Trying system fonts...");
+            
+            // На разных ОС разные пути. Перепробуем все подряд.
             String[] fontPaths = new String[] {
-                "C:\\Windows\\Fonts\\arial.ttf",           // Windows
-                "C:\\Windows\\Fonts\\segoeui.ttf",         // Windows (красивый)
-                "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",  // Linux (DejaVu)
-                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",  // Linux (DejaVu)
-                "/Library/Fonts/Arial.ttf",                 // macOS
+                // Windows
+                "C:\\Windows\\Fonts\\arial.ttf",
+                "C:\\Windows\\Fonts\\segoeui.ttf",
+                "C:\\Windows\\Fonts\\calibri.ttf",
+                "C:\\Windows\\Fonts\\verdana.ttf",
+                // Linux (Debian/Ubuntu)
+                "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+                "/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf",
+                "/usr/share/fonts/opentype/noto/NotoSans-Regular.otf",
+                // Linux (Fedora/RHEL)
+                "/usr/share/fonts/liberation-fonts/LiberationSans-Regular.ttf",
+                // macOS
+                "/Library/Fonts/Arial.ttf",
+                "/System/Library/Fonts/Helvetica.ttc",
+                "/Library/Fonts/DejaVuSans.ttf",
             };
 
             for (String fontPath : fontPaths) {
                 try {
                     File f = new File(fontPath);
-                    if (f.exists()) {
+                    if (f.exists() && f.isFile()) {
                         short[] cyrillic = io.getFonts().getGlyphRangesCyrillic();
                         io.getFonts().addFontFromFileTTF(fontPath, 16.0f, null, cyrillic);
                         fontLoaded = true;
-                        System.out.println("[Ban Assistant] Loaded Cyrillic font from system: " + fontPath);
+                        System.out.println("[Ban Assistant] ✓ Loaded Cyrillic font from system: " + fontPath);
                         break;
                     }
-                } catch (Exception ignored) {
-                    // Шрифт не найден, пробуем следующий
+                } catch (Exception e) {
+                    // Тихо игнорируем, пробуем следующий
                 }
             }
         }
 
         if (!fontLoaded) {
-            System.out.println("[Ban Assistant] WARNING: Could not load any Cyrillic font. Text will show as ?????");
-            System.out.println("[Ban Assistant] Make sure to add Roboto-Regular.ttf to src/main/resources/assets/csce466/fonts/");
+            System.out.println("[Ban Assistant] ✗✗✗ WARNING: Could not load any Cyrillic font!");
+            System.out.println("[Ban Assistant] Text will display as ????? (only ASCII works)");
+            System.out.println("[Ban Assistant] FIX: Download Roboto-Regular.ttf and place to:");
+            System.out.println("[Ban Assistant]     src/main/resources/assets/csce466/fonts/Roboto-Regular.ttf");
+            System.out.println("[Ban Assistant] OR: Make sure you have system fonts with Cyrillic (Arial, DejaVu, Liberation)");
         }
     }
 }
