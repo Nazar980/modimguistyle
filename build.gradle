@@ -1,21 +1,5 @@
-/*
- * CSCE466 Mod - Minecraft 1.16.5 (Forge 36.x)
- *
- * Портировано с 1.19.2 (ForgeGradle 5 / Java 17) -> 1.16.5 (ForgeGradle 4 / Java 8).
- *
- * Главные изменения сборки:
- *   - ForgeGradle 5.1  -> ForgeGradle 4.1.+  (именно эта ветка для 1.16.5)
- *   - Java 17           -> Java 8
- *   - jarJar (5.2+)     -> shadow 6.1.0
- *   - Gradle 6.8        -> Gradle 7.5.1 (ForgeGradle 4 требует >= 7.0)
- *   - mappings: official 1.16.5
- *
- * Для сборки используйте JDK 8 (или 11).
- */
-
 buildscript {
     repositories {
-        maven { url = 'https://maven.parchmentmc.org' }
         maven { url = 'https://maven.minecraftforge.net' }
         mavenCentral()
         maven { url = 'https://repo.spongepowered.org/repository/maven-public/' }
@@ -23,11 +7,8 @@ buildscript {
         maven { url = 'https://jitpack.io' }
     }
     dependencies {
-        // ForgeGradle 4.1 - именно эта ветка для Minecraft 1.16.x
-        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '4.1.+', changing: true
-        // MixinGradle для forge-mixin.json
+        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '5.1.+', changing: true
         classpath 'org.spongepowered:mixingradle:0.7-SNAPSHOT'
-        // Shadow - упаковка imgui-java (и нативов) внутрь финального jar
         classpath 'com.github.jengelman.gradle.plugins:shadow:6.1.0'
     }
 }
@@ -45,65 +26,36 @@ version = '1.0'
 group = 'edu.unl.csce466'
 archivesBaseName = 'csce466-mod'
 
-// 1.16.5 = Java 8
 java.toolchain.languageVersion = JavaLanguageVersion.of(8)
 
 println "Java: ${System.getProperty 'java.version'}, JVM: ${System.getProperty 'java.vm.version'} (${System.getProperty 'java.vendor'}), Arch: ${System.getProperty 'os.arch'}"
-println "Mappings: ${minecraft.mappings}"
-
 
 minecraft {
-    // Mojang official mappings для 1.16.5
-    mappings channel: 'parchment', version: '2021.10.17-1.16.5'
+    mappings channel: 'official', version: '1.16.5'
 
     runs {
         client {
             workingDirectory project.file('run')
-
             property 'forge.logging.markers', 'REGISTRIES'
             property 'forge.logging.console.level', 'debug'
-
-            // Параметры refmap'а для mixin в dev-среде 1.16.5
             property 'mixin.env.remapRefMap', 'true'
             property 'mixin.env.refMapRemappingFile', "${project.projectDir}/build/createSrgToMcp/output.srg"
-
-            mods {
-                examplemod {
-                    source sourceSets.main
-                }
-            }
+            mods { examplemod { source sourceSets.main } }
         }
-
         server {
             workingDirectory project.file('run')
-
             property 'forge.logging.markers', 'REGISTRIES'
             property 'forge.logging.console.level', 'debug'
             property 'mixin.env.remapRefMap', 'true'
             property 'mixin.env.refMapRemappingFile', "${project.projectDir}/build/createSrgToMcp/output.srg"
-
-            mods {
-                examplemod {
-                    source sourceSets.main
-                }
-            }
+            mods { examplemod { source sourceSets.main } }
         }
-
         data {
             workingDirectory project.file('run')
-
             property 'forge.logging.markers', 'REGISTRIES'
             property 'forge.logging.console.level', 'debug'
-
-            args '--mod', 'examplemod', '--all',
-                 '--output', file('src/generated/resources/'),
-                 '--existing', file('src/main/resources/')
-
-            mods {
-                examplemod {
-                    source sourceSets.main
-                }
-            }
+            args '--mod', 'examplemod', '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/')
+            mods { examplemod { source sourceSets.main } }
         }
     }
 }
@@ -118,17 +70,9 @@ repositories {
 }
 
 ext {
-    // imgui-java.
-    // По умолчанию 1.86.10 (как в исходнике под 1.19.2).
-    //
-    // ВАЖНО для 1.16.5: Minecraft 1.16.5 поставляется со старым LWJGL 3.2.2,
-    // а imgui-java 1.86+ собран под LWJGL 3.3.x. Если в рантайме падает с
-    //   java.lang.NoSuchMethodError (org.lwjgl.glfw/GL41 ...)
-    // понизьте версию до 1.85.0 или 1.84.0 (они собраны под LWJGL 3.2.x).
     imguiVersion = '1.86.10'
 }
 
-// Конфигурация "shade" пойдёт и в classpath компиляции, и внутрь итогового jar.
 configurations {
     shade
     implementation.extendsFrom shade
@@ -136,16 +80,12 @@ configurations {
 
 dependencies {
     minecraft 'net.minecraftforge:forge:1.16.5-36.2.34'
-
-    // Mixin annotation processor (для генерации forge-mixin.refmap.json)
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 
-    // ImGui-java. LWJGL исключён, т.к. Minecraft уже имеет свой (3.2.2 для 1.16.5).
     shade "io.github.spair:imgui-java-binding:${imguiVersion}"
     shade("io.github.spair:imgui-java-lwjgl3:${imguiVersion}") {
         exclude group: 'org.lwjgl'
     }
-    // Нативные библиотеки Dear ImGui под все ОС
     shade "io.github.spair:imgui-java-natives-windows:${imguiVersion}"
     shade "io.github.spair:imgui-java-natives-linux:${imguiVersion}"
     shade "io.github.spair:imgui-java-natives-macos:${imguiVersion}"
@@ -171,27 +111,22 @@ jar {
     }
 }
 
-// fat-jar: imgui-java + нативы упаковываются внутрь мода
 shadowJar {
     archiveClassifier.set('')
     configurations = [project.configurations.shade]
 }
 
-// reobfuscate fat-jar обратно в SRG-имена (как требует Forge 1.16.5)
 reobf {
     shadowJar {}
 }
 
-// Алиас для привычного jarJar (запускает переобфусцированный shadowJar)
+build.dependsOn 'reobfShadowJar'
+jar.finalizedBy('reobfJar')
+
 task jarJar(dependsOn: 'reobfShadowJar') {
     group = 'build'
     description = 'Assembles the final mod jar with bundled dependencies (fat jar)'
 }
-
-// финальный собираемый артефакт - это shadowJar (после reobf)
-build.dependsOn 'reobfShadowJar'
-
-jar.finalizedBy('reobfJar')
 
 publishing {
     publications {
