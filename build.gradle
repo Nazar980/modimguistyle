@@ -48,10 +48,12 @@ archivesBaseName = 'csce466-mod'
 java.toolchain.languageVersion = JavaLanguageVersion.of(8)
 
 println "Java: ${System.getProperty 'java.version'}, JVM: ${System.getProperty 'java.vm.version'} (${System.getProperty 'java.vendor'}), Arch: ${System.getProperty 'os.arch'}"
+println "Mappings: ${minecraft.mappings}"
+
 
 minecraft {
     // Mojang official mappings для 1.16.5
-    mappings channel: 'stable', version: '39-1.16.5'
+    mappings channel: 'official', version: '1.16.5'
 
     runs {
         client {
