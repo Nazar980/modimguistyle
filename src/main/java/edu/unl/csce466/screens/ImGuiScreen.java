@@ -75,43 +75,65 @@ public class ImGuiScreen extends Screen {
             ImGui.begin("GD Mega Hack", flags);  // <- Родной заголовок с кнопками x и -
 
             ImGui.separator();
-
-            ImGui.checkbox("Open Style Color Editor", showStyleEditor);
+            ImGui.text("Welcome to GD Mega Hack!");
+            ImGui.textWrapped("Press L to open/close. This is a placeholder layout; " +
+                    "toggles for cheats (Fly, KillAura, ESP, Fullbright, ...) can be added below.");
             ImGui.separator();
 
-            ImGui.text("Test elements:");
-            if (ImGui.button("Click me")) {
-                buttonClicked = true;
+            // ===== Test =====
+            if (ImGui.collapsingHeader("Test")) {
+                ImGui.indent();
+                if (ImGui.button("Click me")) {
+                    buttonClicked = true;
+                }
+                if (buttonClicked) {
+                    ImGui.sameLine();
+                    ImGui.text("Button clicked!");
+                }
+                ImGui.unindent();
             }
-            if (buttonClicked) {
-                ImGui.text("Button clicked!");
+
+            // ===== Tools =====
+            if (ImGui.collapsingHeader("Tools")) {
+                ImGui.indent();
+                ImGui.checkbox("Style Color Editor", showStyleEditor);
+                ImGui.checkbox("Show ImGui Demo Window", showDemo);
+                ImGui.unindent();
             }
-            ImGui.checkbox("Demo Window", showDemo);
 
             ImGui.end();
 
             if (showStyleEditor.get()) {
-                ImGui.begin("Style Color Editor", showStyleEditor);
-                ImGui.text("Change colors live:");
+                ImGui.begin("Style Color Editor", showStyleEditor, ImGuiWindowFlags.NoCollapse);
+                ImGui.text("Change menu colors live (apply immediately):");
+                ImGui.separator();
 
                 ImGui.colorEdit4("WindowBg", colWindowBg);
                 ImGui.colorEdit4("TitleBg", colTitleBg);
                 ImGui.colorEdit4("TitleBgActive", colTitleBgActive);
                 ImGui.colorEdit4("TitleBgCollapsed", colTitleBgCollapsed);
+                ImGui.separator();
                 ImGui.colorEdit4("Text", colText);
                 ImGui.colorEdit4("TextDisabled", colTextDisabled);
+                ImGui.separator();
                 ImGui.colorEdit4("Tab", colTab);
                 ImGui.colorEdit4("TabHovered", colTabHovered);
                 ImGui.colorEdit4("TabActive", colTabActive);
+                ImGui.separator();
                 ImGui.colorEdit4("Button", colButton);
                 ImGui.colorEdit4("ButtonHovered", colButtonHovered);
                 ImGui.colorEdit4("ButtonActive", colButtonActive);
+                ImGui.separator();
                 ImGui.colorEdit4("CheckMark", colCheckMark);
                 ImGui.colorEdit4("FrameBg", colFrameBg);
                 ImGui.colorEdit4("FrameBgHovered", colFrameBgHovered);
                 ImGui.colorEdit4("FrameBgActive", colFrameBgActive);
 
-                if (ImGui.button("Reset to Default")) {
+                ImGui.spacing();
+                ImGui.separator();
+                ImGui.spacing();
+
+                if (ImGui.button("Reset to Default (pink title)")) {
                     resetColorsToDefault();
                 }
 
