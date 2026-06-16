@@ -53,8 +53,8 @@ public class ImGuiScreen extends Screen {
         ImGuiRenderer renderer = ImGuiRenderer.getInstance();
 
         ImGuiIO io = ImGui.getIO();
-        Minecraft mc = Minecraft.getInstance();
-        io.setMousePos((float) mc.mouseHandler.xpos(), (float) mc.mouseHandler.ypos());
+        // Позиция мыши теперь автоматически обновляется GLFW cursor-pos callback-ом
+        // (imGuiGlfw.init с installCallbacks=true). Вручную её дёргать не нужно.
 
         // Регистрируем содержимое меню для текущего кадра.
         // Сам рендер ImGui (newFrame + render) выполняется глобально через миксин
@@ -172,29 +172,6 @@ public class ImGuiScreen extends Screen {
         colFrameBg[0] = 50/255f; colFrameBg[1] = 50/255f; colFrameBg[2] = 55/255f; colFrameBg[3] = 160/255f;
         colFrameBgHovered[0] = 70/255f; colFrameBgHovered[1] = 70/255f; colFrameBgHovered[2] = 80/255f; colFrameBgHovered[3] = 180/255f;
         colFrameBgActive[0] = 90/255f; colFrameBgActive[1] = 90/255f; colFrameBgActive[2] = 100/255f; colFrameBgActive[3] = 220/255f;
-    }
-
-    @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        ImGui.getIO().setMouseDown(button, true);
-        return super.mouseClicked(mouseX, mouseY, button);
-    }
-
-    @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        ImGui.getIO().setMouseDown(button, false);
-        return super.mouseReleased(mouseX, mouseY, button);
-    }
-
-    @Override
-    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
-        return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
-    }
-
-    @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
-        ImGui.getIO().setMouseWheel((float) delta);
-        return super.mouseScrolled(mouseX, mouseY, delta);
     }
 
     @Override
