@@ -55,24 +55,10 @@ public class ImGuiRenderer {
 
         // installCallbacks = true: ImGui сам ставит GLFW-коллбэки (key / char / mouse / scroll / cursorpos)
         // и автоматически вызывает предыдущие (майнкрафтовские) через встроенную цепочку.
-        // Это единственный нормальный способ, чтобы:
-        //   1) работал текстовый ввод в полях ImGui (буквы, заглавные, Shift+<key>, кириллица, backspace, Ctrl+V),
-        //   2) не ломались клавиатурные/мышиные события Minecraft когда ImGui не открыт,
-        //   3) не приходилось вручную прокидывать все события через Forge-ивенты.
         imGuiGlfw.init(Minecraft.getInstance().getWindow().getWindow(), true);
 
         // ===== Загрузка шрифта с поддержкой кириллицы =====
-        // Dear ImGui по умолчанию использует встроенный шрифт, который содержит только ASCII.
-        // Для русского текста нужно явно добавить шрифт TTF с поддержкой кириллицы.
         loadCyrillicFont();
-        
-        // ВАЖНО: после загрузки шрифтов нужно пересобрать атлас текстур!
-        // Это критично, иначе новые шрифты не будут работать.
-        try {
-            ImGui.getIO().getFonts().build();
-        } catch (Exception e) {
-            System.out.println("[Ban Assistant] Warning: could not rebuild font atlas: " + e.getMessage());
-        }
 
         try {
             initGl3Renderer("#version 410 core");
@@ -157,83 +143,68 @@ public class ImGuiRenderer {
         // Никакого кода для Viewports - он удалён
     }
 
-    // ================= Загрузка шрифта с кириллицей из ассетс =================
+    // ================= Загрузка шрифта с кириллицей =================
     private void loadCyrillicFont() {
         ImGuiIO io = ImGui.getIO();
-        boolean fontLoaded = false;
-
-        // ===== Вариант 1: загружаем шрифт из ассетс мода =====
+        System.out.println("[Ban Assistant] === Font Loading Debug ===");
+        System.out.println("[Ban Assistant] Available glyphRanges methods:");
         try {
-            Minecraft mc = Minecraft.getInstance();
-            // Ищем шрифт в папке assets/csce466/fonts/Roboto-Regular.ttf
-            ResourceLocation fontResource = new ResourceLocation("csce466", "fonts/Roboto-Regular.ttf");
-            
-            // Прочитаем поток из ассетс и сохраним в временный файл
-            String tempFontPath = System.getProperty("java.io.tmpdir") + File.separator + "imgui_font_csce466.ttf";
-            try (InputStream is = mc.getResourceManager().getResource(fontResource).getInputStream();
-                 FileOutputStream fos = new FileOutputStream(tempFontPath)) {
-                byte[] buffer = new byte[1024];
-                int len;
-                while ((len = is.read(buffer)) != -1) {
-                    fos.write(buffer, 0, len);
-                }
-            }
-            
-            // Теперь загружаем из временного файла в ImGui
             short[] cyrillic = io.getFonts().getGlyphRangesCyrillic();
-            io.getFonts().addFontFromFileTTF(tempFontPath, 16.0f, null, cyrillic);
-            fontLoaded = true;
-            System.out.println("[Ban Assistant] ✓ Loaded Cyrillic font from assets: " + tempFontPath);
+            System.out.println("[Ban Assistant] ✓ getGlyphRangesCyrillic exists, size: " + cyrillic.length);
         } catch (Exception e) {
-            System.out.println("[Ban Assistant] ✗ Could not load font from assets (" + e.getClass().getSimpleName() + ": " + e.getMessage() + ")");
+            System.out.println("[Ban Assistant] ✗ getGlyphRangesCyrillic failed: " + e.getMessage());
         }
 
-        // ===== Вариант 2: если ассетс не найден, пробуем системные шрифты =====
-        if (!fontLoaded) {
-            System.out.println("[Ban Assistant] Trying system fonts...");
-            
-            // На разных ОС разные пути. Перепробуем все подряд.
-            String[] fontPaths = new String[] {
-                // Windows
-                "C:\\Windows\\Fonts\\arial.ttf",
-                "C:\\Windows\\Fonts\\segoeui.ttf",
-                "C:\\Windows\\Fonts\\calibri.ttf",
-                "C:\\Windows\\Fonts\\verdana.ttf",
-                // Linux (Debian/Ubuntu)
-                "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
-                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-                "/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf",
-                "/usr/share/fonts/opentype/noto/NotoSans-Regular.otf",
-                // Linux (Fedora/RHEL)
-                "/usr/share/fonts/liberation-fonts/LiberationSans-Regular.ttf",
-                // macOS
-                "/Library/Fonts/Arial.ttf",
-                "/System/Library/Fonts/Helvetica.ttc",
-                "/Library/Fonts/DejaVuSans.ttf",
-            };
+        boolean fontLoaded = false;
+        
+        // ===== Попытка 1: системный шрифт напрямую (самый надёжный способ) =====
+        System.out.println("[Ban Assistant] === Trying system fonts (Attempt 1) ===");
+        String[] fontPaths = new String[] {
+            "C:\\Windows\\Fonts\\arial.ttf",
+            "C:\\Windows\\Fonts\\segoeui.ttf",
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+            "/Library/Fonts/Arial.ttf",
+        };
 
-            for (String fontPath : fontPaths) {
-                try {
-                    File f = new File(fontPath);
-                    if (f.exists() && f.isFile()) {
+        for (String fontPath : fontPaths) {
+            try {
+                File f = new File(fontPath);
+                System.out.println("[Ban Assistant] Checking: " + fontPath + " (exists: " + f.exists() + ")");
+                if (f.exists() && f.canRead()) {
+                    System.out.println("[Ban Assistant] Attempting to load: " + fontPath);
+                    // Пробуем разные сигнатуры метода addFontFromFileTTF
+                    try {
+                        // Сигнатура 1: (String, float, ImFontConfig, short[])
                         short[] cyrillic = io.getFonts().getGlyphRangesCyrillic();
                         io.getFonts().addFontFromFileTTF(fontPath, 16.0f, null, cyrillic);
                         fontLoaded = true;
-                        System.out.println("[Ban Assistant] ✓ Loaded Cyrillic font from system: " + fontPath);
+                        System.out.println("[Ban Assistant] ✓✓✓ SUCCESS: Loaded with sig1 (with cyrillic): " + fontPath);
                         break;
+                    } catch (Exception e1) {
+                        System.out.println("[Ban Assistant] Sig1 failed: " + e1.getClass().getSimpleName());
+                        try {
+                            // Сигнатура 2: (String, float)
+                            io.getFonts().addFontFromFileTTF(fontPath, 16.0f);
+                            fontLoaded = true;
+                            System.out.println("[Ban Assistant] ✓✓ PARTIAL: Loaded with sig2 (no cyrillic specified): " + fontPath);
+                            break;
+                        } catch (Exception e2) {
+                            System.out.println("[Ban Assistant] Sig2 also failed: " + e2.getClass().getSimpleName());
+                        }
                     }
-                } catch (Exception e) {
-                    // Тихо игнорируем, пробуем следующий
                 }
+            } catch (Exception e) {
+                System.out.println("[Ban Assistant] Exception checking " + fontPath + ": " + e.getMessage());
             }
         }
 
         if (!fontLoaded) {
-            System.out.println("[Ban Assistant] ✗✗✗ WARNING: Could not load any Cyrillic font!");
-            System.out.println("[Ban Assistant] Text will display as ????? (only ASCII works)");
-            System.out.println("[Ban Assistant] FIX: Download Roboto-Regular.ttf and place to:");
-            System.out.println("[Ban Assistant]     src/main/resources/assets/csce466/fonts/Roboto-Regular.ttf");
-            System.out.println("[Ban Assistant] OR: Make sure you have system fonts with Cyrillic (Arial, DejaVu, Liberation)");
+            System.out.println("[Ban Assistant] ✗ Could not load any system font with Cyrillic support.");
+            System.out.println("[Ban Assistant] ImGui will use built-in font (ASCII only - text will show as ?????)");
+            System.out.println("[Ban Assistant] SOLUTION: Make sure your system has fonts like Arial, DejaVu Sans, or Liberation Sans");
+        } else {
+            System.out.println("[Ban Assistant] === Font Load Successful ===");
         }
     }
 }
