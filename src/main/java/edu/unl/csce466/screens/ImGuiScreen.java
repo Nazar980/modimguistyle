@@ -182,12 +182,11 @@ public class ImGuiScreen extends Screen {
 
                 ImGui.endTabBar();
             }
-
-            ImGui.end();
-
             drawRulePopup(POPUP_BAN_RULES, BAN_RULES, banState, "Выберите правило для бана:");
             drawRulePopup(POPUP_MUTE_RULES, MUTE_RULES, muteState, "Выберите правило для мута:");
             drawPlayerPopup();
+
+            ImGui.end();
         });
     }
 
