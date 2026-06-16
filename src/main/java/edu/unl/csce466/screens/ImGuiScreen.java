@@ -224,7 +224,7 @@ public class ImGuiScreen extends Screen {
         ImGui.end();
     }
 
-    private void drawMuteAssistant(Minecraft mc) {
+    private void drawMuteAssistant(Minecraft mc, ImGuiIO io) {
         ImGui.setNextWindowSize(360, 480, ImGuiCond.FirstUseEver);
         ImGui.setNextWindowPos(400, 60, ImGuiCond.FirstUseEver);
         if (ImGui.begin("Помощник мутов", ImGuiWindowFlags.None)) {
@@ -260,7 +260,7 @@ public class ImGuiScreen extends Screen {
         ImGui.end();
     }
 
-    private void drawCheckAssistant(Minecraft mc) {
+    private void drawCheckAssistant(Minecraft mc, ImGuiIO io) {
         ImGui.setNextWindowSize(360, 420, ImGuiCond.FirstUseEver);
         ImGui.setNextWindowPos(780, 60, ImGuiCond.FirstUseEver);
         if (ImGui.begin("Проверка игроков", ImGuiWindowFlags.None)) {
