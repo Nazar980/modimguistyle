@@ -32,25 +32,25 @@ public class ImGuiScreen extends Screen {
     private static final String POPUP_MUTE_PLAYERS = "SelectMutePlayerPopup";
     private static final String POPUP_CHECK_PLAYERS = "SelectCheckPlayerPopup";
 
-    private final float[] colWindowBg = {30 / 255f, 30 / 255f, 35 / 255f, 220 / 255f};
-    private final float[] colTitleBg = {245 / 255f, 70 / 255f, 130 / 255f, 220 / 255f};
-    private final float[] colTitleBgActive = {245 / 255f, 70 / 255f, 130 / 255f, 220 / 255f};
-    private final float[] colTitleBgCollapsed = {245 / 255f, 70 / 255f, 130 / 255f, 160 / 255f};
+    private final float[] colWindowBg = {14 / 255f, 14 / 255f, 16 / 255f, 236 / 255f};
+    private final float[] colTitleBg = {28 / 255f, 28 / 255f, 30 / 255f, 245 / 255f};
+    private final float[] colTitleBgActive = {44 / 255f, 44 / 255f, 46 / 255f, 245 / 255f};
+    private final float[] colTitleBgCollapsed = {24 / 255f, 24 / 255f, 26 / 255f, 210 / 255f};
     private final float[] colText = {1f, 1f, 1f, 1f};
-    private final float[] colTextDisabled = {180 / 255f, 180 / 255f, 190 / 255f, 140 / 255f};
-    private final float[] colTab = {42 / 255f, 42 / 255f, 42 / 255f, 180 / 255f};
-    private final float[] colTabHovered = {60 / 255f, 60 / 255f, 65 / 255f, 200 / 255f};
-    private final float[] colTabActive = {50 / 255f, 50 / 255f, 55 / 255f, 220 / 255f};
-    private final float[] colButton = {70 / 255f, 70 / 255f, 80 / 255f, 220 / 255f};
-    private final float[] colButtonHovered = {90 / 255f, 90 / 255f, 100 / 255f, 230 / 255f};
-    private final float[] colButtonActive = {110 / 255f, 110 / 255f, 120 / 255f, 240 / 255f};
-    private final float[] colCheckMark = {245 / 255f, 70 / 255f, 130 / 255f, 1f};
-    private final float[] colFrameBg = {50 / 255f, 50 / 255f, 55 / 255f, 220 / 255f};
-    private final float[] colFrameBgHovered = {70 / 255f, 70 / 255f, 80 / 255f, 230 / 255f};
-    private final float[] colFrameBgActive = {90 / 255f, 90 / 255f, 100 / 255f, 240 / 255f};
-    private final float[] colHeader = {90 / 255f, 40 / 255f, 60 / 255f, 220 / 255f};
-    private final float[] colHeaderHovered = {130 / 255f, 55 / 255f, 85 / 255f, 230 / 255f};
-    private final float[] colHeaderActive = {245 / 255f, 70 / 255f, 130 / 255f, 220 / 255f};
+    private final float[] colTextDisabled = {160 / 255f, 160 / 255f, 160 / 255f, 140 / 255f};
+    private final float[] colTab = {36 / 255f, 36 / 255f, 38 / 255f, 180 / 255f};
+    private final float[] colTabHovered = {60 / 255f, 60 / 255f, 62 / 255f, 210 / 255f};
+    private final float[] colTabActive = {78 / 255f, 78 / 255f, 80 / 255f, 235 / 255f};
+    private final float[] colButton = {54 / 255f, 54 / 255f, 56 / 255f, 230 / 255f};
+    private final float[] colButtonHovered = {82 / 255f, 82 / 255f, 84 / 255f, 240 / 255f};
+    private final float[] colButtonActive = {118 / 255f, 118 / 255f, 120 / 255f, 245 / 255f};
+    private final float[] colCheckMark = {1f, 1f, 1f, 1f};
+    private final float[] colFrameBg = {34 / 255f, 34 / 255f, 36 / 255f, 225 / 255f};
+    private final float[] colFrameBgHovered = {48 / 255f, 48 / 255f, 50 / 255f, 236 / 255f};
+    private final float[] colFrameBgActive = {70 / 255f, 70 / 255f, 72 / 255f, 242 / 255f};
+    private final float[] colHeader = {40 / 255f, 40 / 255f, 42 / 255f, 225 / 255f};
+    private final float[] colHeaderHovered = {60 / 255f, 60 / 255f, 62 / 255f, 235 / 255f};
+    private final float[] colHeaderActive = {88 / 255f, 88 / 255f, 90 / 255f, 240 / 255f};
 
     private static class Rule {
         final String id;
@@ -153,40 +153,11 @@ public class ImGuiScreen extends Screen {
         renderer.draw(() -> {
             applyCurrentColors();
 
-            ImGui.setNextWindowSize(760, 650, ImGuiCond.FirstUseEver);
-            ImGui.setNextWindowPos(
-                (io.getDisplaySizeX() - 760) * 0.5f,
-                (io.getDisplaySizeY() - 650) * 0.5f,
-                ImGuiCond.FirstUseEver
-            );
+            drawMainMenuBar();
 
-            ImGui.begin("Помощник модерации", ImGuiWindowFlags.None);
-
-            if (ImGui.beginMainMenuBar()) {
-                if (ImGui.beginMenu("Инструменты")) {
-                    if (ImGui.menuItem("Редактор цветов", "", showStyleEditor.get())) {
-                        showStyleEditor.set(!showStyleEditor.get());
-                    }
-                    if (ImGui.menuItem("Демо-окно ImGui", "", showDemo.get())) {
-                        showDemo.set(!showDemo.get());
-                    }
-                    ImGui.endMenu();
-                }
-                if (ImGui.beginMenu("Помощь")) {
-                    ImGui.text("Помощник модерации для Minecraft 1.16.5");
-                    ImGui.textWrapped("Выбери правило, потом игрока, потом нажми кнопку действия.");
-                    ImGui.endMenu();
-                }
-                ImGui.endMainMenuBar();
-            }
-
-            ImGui.spacing();
-            ImGui.textColored(245 / 255f, 70 / 255f, 130 / 255f, 1f, "Помощник модерации");
-            ImGui.separator();
-
-            drawBanAssistant(mc);
-            drawMuteAssistant(mc);
-            drawCheckAssistant(mc);
+            drawBanAssistant(mc, io);
+            drawMuteAssistant(mc, io);
+            drawCheckAssistant(mc, io);
 
             if (showStyleEditor.get()) {
                 drawStyleEditor();
@@ -194,129 +165,159 @@ public class ImGuiScreen extends Screen {
             if (showDemo.get()) {
                 ImGui.showDemoWindow(showDemo);
             }
-
-            ImGui.end();
         });
     }
 
-    private void drawBanAssistant(Minecraft mc) {
-        ImGui.spacing();
-        ImGui.text("Помощник банов");
-        ImGui.separator();
-
-        ImGui.text("1) Правило:");
-        renderSelectedRule(banState);
-        if (ImGui.button("Выбрать правило...")) {
-            ImGui.openPopup(POPUP_BAN_RULES);
+    private void drawMainMenuBar() {
+        if (ImGui.beginMainMenuBar()) {
+            if (ImGui.beginMenu("Окна")) {
+                if (ImGui.menuItem("Редактор цветов", "", showStyleEditor.get())) {
+                    showStyleEditor.set(!showStyleEditor.get());
+                }
+                if (ImGui.menuItem("Демо-окно ImGui", "", showDemo.get())) {
+                    showDemo.set(!showDemo.get());
+                }
+                ImGui.endMenu();
+            }
+            if (ImGui.beginMenu("Помощь")) {
+                ImGui.text("Помощник модерации для Minecraft 1.16.5");
+                ImGui.textWrapped("Каждый помощник открыт в отдельном окне.");
+                ImGui.endMenu();
+            }
+            ImGui.endMainMenuBar();
         }
-        drawBanRulesPopup();
+    }
 
-        ImGui.spacing();
-        ImGui.separator();
-        ImGui.spacing();
+    private void drawBanAssistant(Minecraft mc, ImGuiIO io) {
+        ImGui.setNextWindowSize(360, 520, ImGuiCond.FirstUseEver);
+        ImGui.setNextWindowPos(20, 60, ImGuiCond.FirstUseEver);
+        if (ImGui.begin("Помощник банов", ImGuiWindowFlags.None)) {
+            ImGui.text("Бан");
+            ImGui.separator();
 
-        ImGui.text("2) Игрок:");
-        drawPlayerModeControls(banState, PlayerPopupContext.BAN, POPUP_BAN_PLAYERS);
-        drawBanPlayersPopup();
+            ImGui.text("1) Правило:");
+            renderSelectedRule(banState);
+            if (ImGui.button("Выбрать правило...")) {
+                ImGui.openPopup(POPUP_BAN_RULES);
+            }
+            drawBanRulesPopup();
 
-        ImGui.spacing();
-        ImGui.separator();
-        ImGui.spacing();
+            ImGui.spacing();
+            ImGui.separator();
+            ImGui.spacing();
 
-        ImGui.text("3) Бан:");
-        drawRuleActionButton(mc, banState, "Забанить игрока", true);
-        renderStatus(banState);
+            ImGui.text("2) Игрок:");
+            drawPlayerModeControls(banState, PlayerPopupContext.BAN, POPUP_BAN_PLAYERS);
+            drawBanPlayersPopup();
 
-        ImGui.spacing();
-        ImGui.separator();
+            ImGui.spacing();
+            ImGui.separator();
+            ImGui.spacing();
+
+            ImGui.text("3) Бан:");
+            drawRuleActionButton(mc, banState, "Забанить игрока", true);
+            renderStatus(banState);
+
+            ImGui.spacing();
+            ImGui.separator();
+        }
+        ImGui.end();
     }
 
     private void drawMuteAssistant(Minecraft mc) {
-        ImGui.spacing();
-        ImGui.text("Помощник мутов");
-        ImGui.separator();
+        ImGui.setNextWindowSize(360, 480, ImGuiCond.FirstUseEver);
+        ImGui.setNextWindowPos(400, 60, ImGuiCond.FirstUseEver);
+        if (ImGui.begin("Помощник мутов", ImGuiWindowFlags.None)) {
+            ImGui.text("Мут");
+            ImGui.separator();
 
-        ImGui.text("1) Правило:");
-        renderSelectedRule(muteState);
-        if (ImGui.button("Выбрать правило...")) {
-            ImGui.openPopup(POPUP_MUTE_RULES);
+            ImGui.text("1) Правило:");
+            renderSelectedRule(muteState);
+            if (ImGui.button("Выбрать правило...")) {
+                ImGui.openPopup(POPUP_MUTE_RULES);
+            }
+            drawMuteRulesPopup();
+
+            ImGui.spacing();
+            ImGui.separator();
+            ImGui.spacing();
+
+            ImGui.text("2) Игрок:");
+            drawPlayerModeControls(muteState, PlayerPopupContext.MUTE, POPUP_MUTE_PLAYERS);
+            drawMutePlayersPopup();
+
+            ImGui.spacing();
+            ImGui.separator();
+            ImGui.spacing();
+
+            ImGui.text("3) Мут:");
+            drawRuleActionButton(mc, muteState, "Выдать мут", false);
+            renderStatus(muteState);
+
+            ImGui.spacing();
+            ImGui.separator();
         }
-        drawMuteRulesPopup();
-
-        ImGui.spacing();
-        ImGui.separator();
-        ImGui.spacing();
-
-        ImGui.text("2) Игрок:");
-        drawPlayerModeControls(muteState, PlayerPopupContext.MUTE, POPUP_MUTE_PLAYERS);
-        drawMutePlayersPopup();
-
-        ImGui.spacing();
-        ImGui.separator();
-        ImGui.spacing();
-
-        ImGui.text("3) Мут:");
-        drawRuleActionButton(mc, muteState, "Выдать мут", false);
-        renderStatus(muteState);
-
-        ImGui.spacing();
-        ImGui.separator();
+        ImGui.end();
     }
 
     private void drawCheckAssistant(Minecraft mc) {
-        ImGui.spacing();
-        ImGui.text("Проверка игроков");
-        ImGui.separator();
+        ImGui.setNextWindowSize(360, 420, ImGuiCond.FirstUseEver);
+        ImGui.setNextWindowPos(780, 60, ImGuiCond.FirstUseEver);
+        if (ImGui.begin("Проверка игроков", ImGuiWindowFlags.None)) {
+            ImGui.text("Проверка");
+            ImGui.separator();
 
-        ImGui.text("Игрок для проверки:");
-        if (checkState.selectedPlayerName.isEmpty()) {
-            ImGui.textDisabled("  (игрок не выбран)");
-        } else {
-            ImGui.bulletText("Выбран: " + checkState.selectedPlayerName);
-        }
-        if (ImGui.button("Выбрать игрока...")) {
-            openPlayerPopup(PlayerPopupContext.CHECK);
-            ImGui.openPopup(POPUP_CHECK_PLAYERS);
-        }
-        drawCheckPlayersPopup();
-
-        ImGui.spacing();
-        ImGui.separator();
-        ImGui.spacing();
-
-        boolean canStart = mc.player != null && !checkState.selectedPlayerName.isEmpty();
-        if (!canStart) {
-            pushDisabledButtonStyle();
-        }
-        if (ImGui.button("Начать", -1, 36)) {
-            if (canStart) {
-                sendCommandAndStatus(
-                    "/asuxcheat start \"" + checkState.selectedPlayerName + "\"",
-                    checkState,
-                    "Команда отправлена: /asuxcheat start \"" + checkState.selectedPlayerName + "\""
-                );
+            ImGui.text("Игрок для проверки:");
+            if (checkState.selectedPlayerName.isEmpty()) {
+                ImGui.textDisabled("  (игрок не выбран)");
+            } else {
+                ImGui.bulletText("Выбран: " + checkState.selectedPlayerName);
             }
-        }
-        if (!canStart) {
-            popDisabledButtonStyle();
-            if (ImGui.isItemHovered()) {
-                ImGui.setTooltip("Сначала выбери игрока для проверки.");
+            if (ImGui.button("Выбрать игрока...")) {
+                openPlayerPopup(PlayerPopupContext.CHECK);
+                ImGui.openPopup(POPUP_CHECK_PLAYERS);
             }
-        }
+            drawCheckPlayersPopup();
 
-        if (ImGui.button("Остановить (отпустить)", -1, 36)) {
-            sendCommandAndStatus("/asuxcheat stop", checkState, "Команда отправлена: /asuxcheat stop");
-        }
+            ImGui.spacing();
+            ImGui.separator();
+            ImGui.spacing();
 
-        if (ImGui.button("Добавить время (2 минуты)", -1, 36)) {
-            sendCommandAndStatus("/asuxcheat addtime 120", checkState, "Команда отправлена: /asuxcheat addtime 120");
-        }
+            boolean canStart = mc.player != null && !checkState.selectedPlayerName.isEmpty();
+            if (!canStart) {
+                pushDisabledButtonStyle();
+            }
+            if (ImGui.button("Начать", -1, 36)) {
+                if (canStart) {
+                    sendCommandAndStatus(
+                        "/asuxcheat start \"" + checkState.selectedPlayerName + "\"",
+                        checkState,
+                        "Команда отправлена: /asuxcheat start \"" + checkState.selectedPlayerName + "\""
+                    );
+                }
+            }
+            if (!canStart) {
+                popDisabledButtonStyle();
+                if (ImGui.isItemHovered()) {
+                    ImGui.setTooltip("Сначала выбери игрока для проверки.");
+                }
+            }
 
-        if (ImGui.button("Заморозить проверку", -1, 36)) {
-            sendCommandAndStatus("/asuxcheat freeze", checkState, "Команда отправлена: /asuxcheat freeze");
-        }
+            if (ImGui.button("Остановить (отпустить)", -1, 36)) {
+                sendCommandAndStatus("/asuxcheat stop", checkState, "Команда отправлена: /asuxcheat stop");
+            }
 
-        renderStatus(checkState);
+            if (ImGui.button("Добавить время (2 минуты)", -1, 36)) {
+                sendCommandAndStatus("/asuxcheat addtime 120", checkState, "Команда отправлена: /asuxcheat addtime 120");
+            }
+
+            if (ImGui.button("Заморозить проверку", -1, 36)) {
+                sendCommandAndStatus("/asuxcheat freeze", checkState, "Команда отправлена: /asuxcheat freeze");
+            }
+
+            renderStatus(checkState);
+        }
+        ImGui.end();
     }
 
     private void drawPlayerModeControls(ActionState state, PlayerPopupContext context, String popupName) {
@@ -381,7 +382,7 @@ public class ImGuiScreen extends Screen {
         if (canRun) {
             ImGui.spacing();
             ImGui.textWrapped("Команда для выполнения:");
-            ImGui.textColored(0.4f, 0.8f, 1f, 1f, buildRuleCommand(state.selectedRule, targetName, isBan));
+            ImGui.textColored(0.9f, 0.9f, 0.9f, 1f, buildRuleCommand(state.selectedRule, targetName, isBan));
         }
     }
 
@@ -649,7 +650,7 @@ public class ImGuiScreen extends Screen {
         ImGui.colorEdit4("HeaderActive", colHeaderActive);
         ImGui.spacing();
         ImGui.separator();
-        if (ImGui.button("Сбросить к дефолту (розовый заголовок)")) {
+        if (ImGui.button("Сбросить к черно-белой теме")) {
             resetColorsToDefault();
         }
         ImGui.end();
@@ -690,24 +691,24 @@ public class ImGuiScreen extends Screen {
     }
 
     private void resetColorsToDefault() {
-        colWindowBg[0] = 30 / 255f; colWindowBg[1] = 30 / 255f; colWindowBg[2] = 35 / 255f; colWindowBg[3] = 220 / 255f;
-        colTitleBg[0] = 245 / 255f; colTitleBg[1] = 70 / 255f; colTitleBg[2] = 130 / 255f; colTitleBg[3] = 220 / 255f;
-        colTitleBgActive[0] = 245 / 255f; colTitleBgActive[1] = 70 / 255f; colTitleBgActive[2] = 130 / 255f; colTitleBgActive[3] = 220 / 255f;
-        colTitleBgCollapsed[0] = 245 / 255f; colTitleBgCollapsed[1] = 70 / 255f; colTitleBgCollapsed[2] = 130 / 255f; colTitleBgCollapsed[3] = 160 / 255f;
+        colWindowBg[0] = 14 / 255f; colWindowBg[1] = 14 / 255f; colWindowBg[2] = 16 / 255f; colWindowBg[3] = 236 / 255f;
+        colTitleBg[0] = 28 / 255f; colTitleBg[1] = 28 / 255f; colTitleBg[2] = 30 / 255f; colTitleBg[3] = 245 / 255f;
+        colTitleBgActive[0] = 44 / 255f; colTitleBgActive[1] = 44 / 255f; colTitleBgActive[2] = 46 / 255f; colTitleBgActive[3] = 245 / 255f;
+        colTitleBgCollapsed[0] = 24 / 255f; colTitleBgCollapsed[1] = 24 / 255f; colTitleBgCollapsed[2] = 26 / 255f; colTitleBgCollapsed[3] = 210 / 255f;
         colText[0] = 1f; colText[1] = 1f; colText[2] = 1f; colText[3] = 1f;
-        colTextDisabled[0] = 180 / 255f; colTextDisabled[1] = 180 / 255f; colTextDisabled[2] = 190 / 255f; colTextDisabled[3] = 140 / 255f;
-        colTab[0] = 42 / 255f; colTab[1] = 42 / 255f; colTab[2] = 42 / 255f; colTab[3] = 180 / 255f;
-        colTabHovered[0] = 60 / 255f; colTabHovered[1] = 60 / 255f; colTabHovered[2] = 65 / 255f; colTabHovered[3] = 200 / 255f;
-        colTabActive[0] = 50 / 255f; colTabActive[1] = 50 / 255f; colTabActive[2] = 55 / 255f; colTabActive[3] = 220 / 255f;
-        colButton[0] = 70 / 255f; colButton[1] = 70 / 255f; colButton[2] = 80 / 255f; colButton[3] = 220 / 255f;
-        colButtonHovered[0] = 90 / 255f; colButtonHovered[1] = 90 / 255f; colButtonHovered[2] = 100 / 255f; colButtonHovered[3] = 230 / 255f;
-        colButtonActive[0] = 110 / 255f; colButtonActive[1] = 110 / 255f; colButtonActive[2] = 120 / 255f; colButtonActive[3] = 240 / 255f;
-        colCheckMark[0] = 245 / 255f; colCheckMark[1] = 70 / 255f; colCheckMark[2] = 130 / 255f; colCheckMark[3] = 1f;
-        colFrameBg[0] = 50 / 255f; colFrameBg[1] = 50 / 255f; colFrameBg[2] = 55 / 255f; colFrameBg[3] = 220 / 255f;
-        colFrameBgHovered[0] = 70 / 255f; colFrameBgHovered[1] = 70 / 255f; colFrameBgHovered[2] = 80 / 255f; colFrameBgHovered[3] = 230 / 255f;
-        colFrameBgActive[0] = 90 / 255f; colFrameBgActive[1] = 90 / 255f; colFrameBgActive[2] = 100 / 255f; colFrameBgActive[3] = 240 / 255f;
-        colHeader[0] = 90 / 255f; colHeader[1] = 40 / 255f; colHeader[2] = 60 / 255f; colHeader[3] = 220 / 255f;
-        colHeaderHovered[0] = 130 / 255f; colHeaderHovered[1] = 55 / 255f; colHeaderHovered[2] = 85 / 255f; colHeaderHovered[3] = 230 / 255f;
-        colHeaderActive[0] = 245 / 255f; colHeaderActive[1] = 70 / 255f; colHeaderActive[2] = 130 / 255f; colHeaderActive[3] = 220 / 255f;
+        colTextDisabled[0] = 160 / 255f; colTextDisabled[1] = 160 / 255f; colTextDisabled[2] = 160 / 255f; colTextDisabled[3] = 140 / 255f;
+        colTab[0] = 36 / 255f; colTab[1] = 36 / 255f; colTab[2] = 38 / 255f; colTab[3] = 180 / 255f;
+        colTabHovered[0] = 60 / 255f; colTabHovered[1] = 60 / 255f; colTabHovered[2] = 62 / 255f; colTabHovered[3] = 210 / 255f;
+        colTabActive[0] = 78 / 255f; colTabActive[1] = 78 / 255f; colTabActive[2] = 80 / 255f; colTabActive[3] = 235 / 255f;
+        colButton[0] = 54 / 255f; colButton[1] = 54 / 255f; colButton[2] = 56 / 255f; colButton[3] = 230 / 255f;
+        colButtonHovered[0] = 82 / 255f; colButtonHovered[1] = 82 / 255f; colButtonHovered[2] = 84 / 255f; colButtonHovered[3] = 240 / 255f;
+        colButtonActive[0] = 118 / 255f; colButtonActive[1] = 118 / 255f; colButtonActive[2] = 120 / 255f; colButtonActive[3] = 245 / 255f;
+        colCheckMark[0] = 1f; colCheckMark[1] = 1f; colCheckMark[2] = 1f; colCheckMark[3] = 1f;
+        colFrameBg[0] = 34 / 255f; colFrameBg[1] = 34 / 255f; colFrameBg[2] = 36 / 255f; colFrameBg[3] = 225 / 255f;
+        colFrameBgHovered[0] = 48 / 255f; colFrameBgHovered[1] = 48 / 255f; colFrameBgHovered[2] = 50 / 255f; colFrameBgHovered[3] = 236 / 255f;
+        colFrameBgActive[0] = 70 / 255f; colFrameBgActive[1] = 70 / 255f; colFrameBgActive[2] = 72 / 255f; colFrameBgActive[3] = 242 / 255f;
+        colHeader[0] = 40 / 255f; colHeader[1] = 40 / 255f; colHeader[2] = 42 / 255f; colHeader[3] = 225 / 255f;
+        colHeaderHovered[0] = 60 / 255f; colHeaderHovered[1] = 60 / 255f; colHeaderHovered[2] = 62 / 255f; colHeaderHovered[3] = 235 / 255f;
+        colHeaderActive[0] = 88 / 255f; colHeaderActive[1] = 88 / 255f; colHeaderActive[2] = 90 / 255f; colHeaderActive[3] = 240 / 255f;
     }
 }
