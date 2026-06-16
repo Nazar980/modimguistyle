@@ -8,9 +8,7 @@ import imgui.ImGuiIO;
 import imgui.ImGuiStyle;
 import imgui.flag.ImGuiCol;
 import imgui.flag.ImGuiCond;
-import imgui.flag.ImGuiSelectableFlags;
 import imgui.flag.ImGuiWindowFlags;
-import imgui.type.ImBoolean;
 import imgui.type.ImString;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
@@ -25,10 +23,59 @@ import java.util.List;
 
 public class ImGuiScreen extends Screen {
     private static ImGuiScreen INSTANCE = null;
-    private static final String POPUP_RULES = "ВыборПравила";
+
+    private static final String POPUP_BAN_RULES = "ВыборПравилаБан";
+    private static final String POPUP_MUTE_RULES = "ВыборПравилаМут";
     private static final String POPUP_PLAYERS = "ВыборИгрока";
 
-    // ---------- Цвета (розовый заголовок) ----------
+    private enum PlayerPickerContext {
+        BAN,
+        MUTE,
+        CHECK
+    }
+
+    private static class Rule {
+        final String id;
+        final String desc;
+        final String duration;
+        final String command;
+        final boolean permanent;
+
+        Rule(String id, String desc, String duration, String command, boolean permanent) {
+            this.id = id;
+            this.desc = desc;
+            this.duration = duration;
+            this.command = command;
+            this.permanent = permanent;
+        }
+
+        String reason() {
+            return id + " [" + desc + "]";
+        }
+
+        String buildCommand(String targetName) {
+            if (permanent) {
+                return "/" + command + " " + targetName + " " + reason();
+            }
+            return "/" + command + " " + targetName + " " + duration + " " + reason();
+        }
+    }
+
+    private static class AssistantState {
+        Rule selectedRule = null;
+        String selectedPlayerName = "";
+        final ImString offlineNameBuf = new ImString("", 32);
+        boolean useOffline = false;
+        String statusMessage = "";
+        float statusTimer = 0f;
+    }
+
+    private static class CheckState {
+        String selectedPlayerName = "";
+        String statusMessage = "";
+        float statusTimer = 0f;
+    }
+
     private final float[] colWindowBg = {30 / 255f, 30 / 255f, 35 / 255f, 220 / 255f};
     private final float[] colTitleBg = {245 / 255f, 70 / 255f, 130 / 255f, 220 / 255f};
     private final float[] colTitleBgActive = {245 / 255f, 70 / 255f, 130 / 255f, 220 / 255f};
@@ -49,65 +96,47 @@ public class ImGuiScreen extends Screen {
     private final float[] colHeaderHovered = {130 / 255f, 55 / 255f, 85 / 255f, 230 / 255f};
     private final float[] colHeaderActive = {245 / 255f, 70 / 255f, 130 / 255f, 220 / 255f};
 
-    // ---------- Правила ----------
-    private static class Rule {
-        final String id;
-        final String desc;
-        final String duration;
-        final String category;
-
-        Rule(String id, String desc, String duration, String category) {
-            this.id = id;
-            this.desc = desc;
-            this.duration = duration;
-            this.category = category;
-        }
-
-        String commandReason() {
-            return id + " [" + desc + "]";
-        }
-    }
-
-    private static final List<Rule> RULES = new ArrayList<Rule>();
+    private static final List<Rule> BAN_RULES = new ArrayList<Rule>();
+    private static final List<Rule> MUTE_RULES = new ArrayList<Rule>();
 
     static {
-        // ---- Основные правила ----
-        RULES.add(new Rule("1.5", "Использование читов", "14d", "main"));
-        RULES.add(new Rule("1.5.1", "Тим с читером", "8d", "main"));
-        RULES.add(new Rule("1.5.2", "Клан читеров (каждый)", "14d", "main"));
-        RULES.add(new Rule("1.6", "Признание в использовании читов", "12d", "main"));
-        RULES.add(new Rule("1.7", "Ник похож на ник администрации / ютуберов (навсегда)", "forever", "main"));
-        RULES.add(new Rule("1.8", "Использование DDoS-пакетов", "28d", "main"));
-        RULES.add(new Rule("1.8.1", "Попытка краша сервера (навсегда)", "forever", "main"));
-        RULES.add(new Rule("1.9", "Отказ от проверки", "14d", "main"));
-        RULES.add(new Rule("2.0", "Задерживание модератора во время проверки", "14d", "main"));
-        RULES.add(new Rule("2.1", "Выдача себя за модерацию проекта", "20d", "main"));
-        RULES.add(new Rule("2.5", "Больше 5 аккаунтов в бане (каждый новый аккаунт)", "14d", "main"));
-        RULES.add(new Rule("2.6", "Обход бана (навсегда)", "forever", "main"));
-        RULES.add(new Rule("2.7", "Покупка доната через сторонние маркетплейсы (навсегда)", "forever", "main"));
-        // ---- Игровые правила ----
-        RULES.add(new Rule("2.8", "Заливание дома лавой/водой", "5h", "game"));
+        BAN_RULES.add(new Rule("1.1.2", "Пиар проектов (серверов, чатов, читов и т.д.)", "12d", "tempban", false));
+        BAN_RULES.add(new Rule("1.5", "Использование читов", "14d", "tempban", false));
+        BAN_RULES.add(new Rule("1.5.1", "Тим с читером", "8d", "tempban", false));
+        BAN_RULES.add(new Rule("1.5.2", "Клан читеров (каждый)", "14d", "tempban", false));
+        BAN_RULES.add(new Rule("1.6", "Признание в использовании читов", "12d", "tempban", false));
+        BAN_RULES.add(new Rule("1.7", "Ник похож на ник администрации / ютуберов", "", "ban", true));
+        BAN_RULES.add(new Rule("1.8", "Использование DDoS-пакетов", "28d", "tempban", false));
+        BAN_RULES.add(new Rule("1.8.1", "Попытка краша сервера", "", "ban", true));
+        BAN_RULES.add(new Rule("1.9", "Отказ от проверки", "14d", "tempban", false));
+        BAN_RULES.add(new Rule("2.0", "Задерживание модератора во время проверки", "14d", "tempban", false));
+        BAN_RULES.add(new Rule("2.1", "Выдача себя за модерацию проекта", "20d", "tempban", false));
+        BAN_RULES.add(new Rule("2.5", "Больше 5 аккаунтов в бане (каждый новый аккаунт)", "14d", "tempban", false));
+        BAN_RULES.add(new Rule("2.6", "Обход бана", "", "ban", true));
+        BAN_RULES.add(new Rule("2.7", "Покупка доната через сторонние маркетплейсы", "", "ban", true));
+
+        MUTE_RULES.add(new Rule("1.1", "Спам (флуд)", "30m", "tempmute", false));
+        MUTE_RULES.add(new Rule("1.1.3", "КАПС", "30m", "tempmute", false));
+        MUTE_RULES.add(new Rule("1.2", "Массивное оскорбление", "1h", "tempmute", false));
+        MUTE_RULES.add(new Rule("1.3", "Организация флуда в чате с помощью опроса", "4h", "tempmute", false));
+        MUTE_RULES.add(new Rule("1.4", "Упоминание родителей", "12h", "tempmute", false));
+        MUTE_RULES.add(new Rule("1.4.1", "Оскорбление проекта и модераторов сервера", "6h", "tempmute", false));
     }
 
-    // ---------- Состояние UI ----------
-    private Rule selectedRule = null;
-    private String selectedPlayerName = "";
-    private final ImString offlineNameBuf = new ImString("", 32);
-    private boolean useOffline = false;
-    private String statusMessage = "";
-    private float statusTimer = 0f;
-
-    // Окно Style Editor / Demo оставляем в меню "Инструменты"
-    private final ImBoolean showStyleEditor = new ImBoolean(false);
-    private final ImBoolean showDemo = new ImBoolean(false);
+    private final AssistantState banState = new AssistantState();
+    private final AssistantState muteState = new AssistantState();
+    private final CheckState checkState = new CheckState();
+    private PlayerPickerContext playerPickerContext = PlayerPickerContext.BAN;
 
     public static ImGuiScreen getInstance() {
-        if (INSTANCE == null) INSTANCE = new ImGuiScreen();
+        if (INSTANCE == null) {
+            INSTANCE = new ImGuiScreen();
+        }
         return INSTANCE;
     }
 
     private ImGuiScreen() {
-        super(new StringTextComponent("Помощник банов"));
+        super(new StringTextComponent("Помощник модерации"));
     }
 
     @Override
@@ -121,212 +150,273 @@ public class ImGuiScreen extends Screen {
         Minecraft mc = Minecraft.getInstance();
         ImGuiIO io = ImGui.getIO();
 
+        tickStatusTimers(io.getDeltaTime());
+
         renderer.draw(() -> {
             applyCurrentColors();
 
-            ImGui.setNextWindowSize(600, 500, ImGuiCond.FirstUseEver);
+            ImGui.setNextWindowSize(760, 620, ImGuiCond.FirstUseEver);
             ImGui.setNextWindowPos(
-                (io.getDisplaySizeX() - 600) * 0.5f,
-                (io.getDisplaySizeY() - 500) * 0.5f,
+                (io.getDisplaySizeX() - 760) * 0.5f,
+                (io.getDisplaySizeY() - 620) * 0.5f,
                 ImGuiCond.FirstUseEver
             );
 
-            int flags = ImGuiWindowFlags.None;
-            ImGui.begin("Помощник банов", flags);
+            ImGui.begin("Помощник модерации", ImGuiWindowFlags.None);
 
-            // ==== Менюбар (Инструменты -> Редактор цветов / Демо) ====
-            if (ImGui.beginMainMenuBar()) {
-                if (ImGui.beginMenu("Инструменты")) {
-                    if (ImGui.menuItem("Редактор цветов стиля", "", showStyleEditor.get())) {
-                        showStyleEditor.set(!showStyleEditor.get());
-                    }
-                    if (ImGui.menuItem("Показать демо-окно ImGui", "", showDemo.get())) {
-                        showDemo.set(!showDemo.get());
-                    }
-                    ImGui.endMenu();
+            if (ImGui.beginTabBar("ModerationTabs")) {
+                if (ImGui.beginTabItem("Помощник банов")) {
+                    drawBanTab(mc);
+                    ImGui.endTabItem();
                 }
-                if (ImGui.beginMenu("Помощь")) {
-                    ImGui.text("Помощник банов для Minecraft 1.16.5");
-                    ImGui.textWrapped("1. Выбери правило -> 2. Выбери онлайн-игрока ИЛИ введи ник вручную -> 3. Нажми кнопку 'Забанить игрока'.");
-                    ImGui.endMenu();
+
+                if (ImGui.beginTabItem("Помощник мутов")) {
+                    drawMuteTab(mc);
+                    ImGui.endTabItem();
                 }
-                ImGui.endMainMenuBar();
-            }
 
-            ImGui.spacing();
-            ImGui.textColored(245 / 255f, 70 / 255f, 130 / 255f, 1f, "Помощник банов");
-            ImGui.separator();
-            ImGui.spacing();
-
-            // ==== Блок 1: Выбор правила ====
-            ImGui.text("1) Правило:");
-            if (selectedRule == null) {
-                ImGui.textDisabled("  (правило не выбрано)");
-            } else {
-                ImGui.bulletText(selectedRule.id + " — " + selectedRule.desc);
-                ImGui.bulletText("Длительность: " + ("forever".equals(selectedRule.duration)
-                        ? "ПОСТОЯННЫЙ БАН"
-                        : selectedRule.duration));
-            }
-            if (ImGui.button("Выбрать правило...")) {
-                ImGui.openPopup(POPUP_RULES);
-            }
-            drawRulePopup();
-
-            ImGui.spacing();
-            ImGui.separator();
-            ImGui.spacing();
-
-            // ==== Блок 2: Выбор игрока ====
-            ImGui.text("2) Игрок:");
-
-            // Режим онлайн / оффлайн
-            if (ImGui.radioButton("Онлайн-игрок (из таб-листа)", !useOffline)) {
-                useOffline = false;
-            }
-            if (ImGui.radioButton("Оффлайн / ник вручную", useOffline)) {
-                useOffline = true;
-            }
-            ImGui.spacing();
-
-            if (!useOffline) {
-                if (selectedPlayerName.isEmpty()) {
-                    ImGui.textDisabled("  (игрок не выбран)");
-                } else {
-                    ImGui.bulletText("Выбран: " + selectedPlayerName);
+                if (ImGui.beginTabItem("Проверка игроков")) {
+                    drawCheckTab(mc);
+                    ImGui.endTabItem();
                 }
-                if (ImGui.button("Выбрать игрока...")) {
-                    ImGui.openPopup(POPUP_PLAYERS);
-                }
-                drawPlayerPopup();
-            } else {
-                ImGui.text("Ник:");
-                ImGui.setNextItemWidth(-1);
-                ImGui.inputText("##offlinename", offlineNameBuf);
-            }
 
-            ImGui.spacing();
-            ImGui.separator();
-            ImGui.spacing();
-
-            // ==== Блок 3: Бан ====
-            ImGui.text("3) Бан:");
-            ImGui.spacing();
-
-            String targetName = useOffline ? offlineNameBuf.get().trim() : selectedPlayerName;
-            boolean canBan = selectedRule != null && !targetName.isEmpty() && mc.player != null;
-
-            if (!canBan) {
-                // Делаем кнопку визуально серой, если условия не выполнены
-                ImGui.pushStyleColor(ImGuiCol.Button, colButton[0] * 0.6f, colButton[1] * 0.6f, colButton[2] * 0.6f, colButton[3]);
-                ImGui.pushStyleColor(ImGuiCol.ButtonHovered, colButton[0] * 0.6f, colButton[1] * 0.6f, colButton[2] * 0.6f, colButton[3]);
-                ImGui.pushStyleColor(ImGuiCol.ButtonActive, colButton[0] * 0.6f, colButton[1] * 0.6f, colButton[2] * 0.6f, colButton[3]);
-            }
-            if (ImGui.button("Забанить игрока", -1, 36)) {
-                if (canBan) {
-                    executeBan(targetName);
-                }
-            }
-            if (!canBan) {
-                ImGui.popStyleColor(3);
-                if (ImGui.isItemHovered()) {
-                    ImGui.setTooltip("Сначала выбери правило И игрока (онлайн или оффлайн).");
-                }
-            }
-
-            // Предпросмотр команды
-            if (canBan) {
-                ImGui.spacing();
-                ImGui.textWrapped("Команда для выполнения:");
-                ImGui.textColored(0.4f, 0.8f, 1f, 1f, buildCommand(targetName));
-            }
-
-            // Статус
-            if (statusTimer > 0f && !statusMessage.isEmpty()) {
-                ImGui.spacing();
-                ImGui.separator();
-                ImGui.textWrapped(statusMessage);
-                statusTimer -= io.getDeltaTime();
-                if (statusTimer <= 0f) statusMessage = "";
+                ImGui.endTabBar();
             }
 
             ImGui.end();
 
-            // ==== Дополнительные окна ====
-            if (showStyleEditor.get()) {
-                drawStyleEditor();
-            }
-            if (showDemo.get()) {
-                ImGui.showDemoWindow(showDemo);
-            }
+            drawRulePopup(POPUP_BAN_RULES, BAN_RULES, banState, "Выберите правило для бана:");
+            drawRulePopup(POPUP_MUTE_RULES, MUTE_RULES, muteState, "Выберите правило для мута:");
+            drawPlayerPopup();
         });
     }
 
-    // ================= Popup: выбор правила =================
-    private void drawRulePopup() {
-        ImGui.setNextWindowSize(520, 480, ImGuiCond.Appearing);
-        if (ImGui.beginPopupModal(POPUP_RULES)) {
-            ImGui.text("Выберите правило для бана:");
-            ImGui.separator();
+    private void drawBanTab(Minecraft mc) {
+        drawAssistantHeader("Помощник банов");
 
-            // Группируем по категориям
-            if (ImGui.collapsingHeader("Основные правила", ImGuiSelectableFlags.DontClosePopups)) {
-                for (Rule r : RULES) {
-                    if (!"main".equals(r.category)) continue;
-                    String label = r.id + " — " + r.desc + "  (" + ("forever".equals(r.duration) ? "ПЕРМ" : r.duration) + ")";
-                    if (ImGui.selectable(label)) {
-                        selectedRule = r;
-                        ImGui.closeCurrentPopup();
-                    }
-                }
-            }
-            if (ImGui.collapsingHeader("Игровые правила", ImGuiSelectableFlags.DontClosePopups)) {
-                for (Rule r : RULES) {
-                    if (!"game".equals(r.category)) continue;
-                    String label = r.id + " — " + r.desc + "  (" + r.duration + ")";
-                    if (ImGui.selectable(label)) {
-                        selectedRule = r;
-                        ImGui.closeCurrentPopup();
-                    }
-                }
-            }
+        ImGui.text("1) Правило:");
+        renderSelectedRule(banState);
+        if (ImGui.button("Выбрать правило...")) {
+            ImGui.openPopup(POPUP_BAN_RULES);
+        }
 
-            ImGui.spacing();
-            ImGui.separator();
-            if (ImGui.button("Отмена", -1, 0)) {
-                ImGui.closeCurrentPopup();
+        ImGui.spacing();
+        ImGui.separator();
+        ImGui.spacing();
+
+        ImGui.text("2) Игрок:");
+        drawPlayerModeControls(banState, PlayerPickerContext.BAN);
+
+        ImGui.spacing();
+        ImGui.separator();
+        ImGui.spacing();
+
+        ImGui.text("3) Действие:");
+        drawRuleActionButton(mc, banState, "Забанить игрока");
+
+        renderStatus(banState);
+    }
+
+    private void drawMuteTab(Minecraft mc) {
+        drawAssistantHeader("Помощник мутов");
+
+        ImGui.text("1) Правило:");
+        renderSelectedRule(muteState);
+        if (ImGui.button("Выбрать правило...")) {
+            ImGui.openPopup(POPUP_MUTE_RULES);
+        }
+
+        ImGui.spacing();
+        ImGui.separator();
+        ImGui.spacing();
+
+        ImGui.text("2) Игрок:");
+        drawPlayerModeControls(muteState, PlayerPickerContext.MUTE);
+
+        ImGui.spacing();
+        ImGui.separator();
+        ImGui.spacing();
+
+        ImGui.text("3) Действие:");
+        drawRuleActionButton(mc, muteState, "Выдать мут");
+
+        renderStatus(muteState);
+    }
+
+    private void drawCheckTab(Minecraft mc) {
+        drawAssistantHeader("Проверка игроков");
+
+        ImGui.text("Игрок для проверки:");
+        if (checkState.selectedPlayerName.isEmpty()) {
+            ImGui.textDisabled("  (игрок не выбран)");
+        } else {
+            ImGui.bulletText("Выбран: " + checkState.selectedPlayerName);
+        }
+        if (ImGui.button("Выбрать игрока...")) {
+            openPlayerPopup(PlayerPickerContext.CHECK);
+        }
+
+        ImGui.spacing();
+        ImGui.separator();
+        ImGui.spacing();
+
+        boolean canStart = mc.player != null && !checkState.selectedPlayerName.isEmpty();
+        if (!canStart) {
+            pushDisabledButtonStyle();
+        }
+        if (ImGui.button("Начать", -1, 36)) {
+            if (canStart) {
+                executeCheckCommand(
+                    "/asuxcheat start \"" + checkState.selectedPlayerName + "\"",
+                    checkState,
+                    "Команда отправлена: /asuxcheat start \"" + checkState.selectedPlayerName + "\""
+                );
             }
-            ImGui.endPopup();
+        }
+        if (!canStart) {
+            popDisabledButtonStyle();
+            if (ImGui.isItemHovered()) {
+                ImGui.setTooltip("Сначала выбери игрока для проверки.");
+            }
+        }
+
+        if (ImGui.button("Остановить (отпустить)", -1, 36)) {
+            executeCheckCommand("/asuxcheat stop", checkState, "Команда отправлена: /asuxcheat stop");
+        }
+
+        if (ImGui.button("Добавить время (2 минуты)", -1, 36)) {
+            executeCheckCommand("/asuxcheat addtime 120", checkState, "Команда отправлена: /asuxcheat addtime 120");
+        }
+
+        if (ImGui.button("Заморозить проверку", -1, 36)) {
+            executeCheckCommand("/asuxcheat freeze", checkState, "Команда отправлена: /asuxcheat freeze");
+        }
+
+        renderStatus(checkState);
+    }
+
+    private void drawAssistantHeader(String title) {
+        ImGui.spacing();
+        ImGui.textColored(245 / 255f, 70 / 255f, 130 / 255f, 1f, title);
+        ImGui.separator();
+        ImGui.spacing();
+    }
+
+    private void renderSelectedRule(AssistantState state) {
+        if (state.selectedRule == null) {
+            ImGui.textDisabled("  (правило не выбрано)");
+            return;
+        }
+
+        ImGui.bulletText(state.selectedRule.id + " — " + state.selectedRule.desc);
+        if (state.selectedRule.permanent) {
+            ImGui.bulletText("Длительность: постоянный бан");
+        } else {
+            ImGui.bulletText("Длительность: " + state.selectedRule.duration);
         }
     }
 
-    // ================= Popup: выбор онлайн-игрока =================
-    private void drawPlayerPopup() {
-        ImGui.setNextWindowSize(340, 400, ImGuiCond.Appearing);
-        if (ImGui.beginPopupModal(POPUP_PLAYERS)) {
-            Minecraft mc = Minecraft.getInstance();
-            ImGui.text("Онлайн-игроки:");
+    private void drawPlayerModeControls(AssistantState state, PlayerPickerContext context) {
+        if (ImGui.radioButton("Онлайн-игрок (из таб-листа)", !state.useOffline)) {
+            state.useOffline = false;
+        }
+        if (ImGui.radioButton("Оффлайн / ник вручную", state.useOffline)) {
+            state.useOffline = true;
+        }
+
+        ImGui.spacing();
+        if (!state.useOffline) {
+            if (state.selectedPlayerName.isEmpty()) {
+                ImGui.textDisabled("  (игрок не выбран)");
+            } else {
+                ImGui.bulletText("Выбран: " + state.selectedPlayerName);
+            }
+            if (ImGui.button("Выбрать игрока...")) {
+                openPlayerPopup(context);
+            }
+        } else {
+            ImGui.text("Ник:");
+            ImGui.setNextItemWidth(-1);
+            ImGui.inputText("##offline_name_" + context.name(), state.offlineNameBuf);
+        }
+
+        ImGui.spacing();
+    }
+
+    private void drawRuleActionButton(Minecraft mc, AssistantState state, String buttonText) {
+        String targetName = state.useOffline ? state.offlineNameBuf.get().trim() : state.selectedPlayerName;
+        boolean canExecute = mc.player != null && state.selectedRule != null && !targetName.isEmpty();
+
+        if (!canExecute) {
+            pushDisabledButtonStyle();
+        }
+        if (ImGui.button(buttonText, -1, 36)) {
+            if (canExecute) {
+                executeRuleCommand(state, targetName);
+            }
+        }
+        if (!canExecute) {
+            popDisabledButtonStyle();
+            if (ImGui.isItemHovered()) {
+                ImGui.setTooltip("Сначала выбери правило и игрока.");
+            }
+        }
+
+        if (canExecute) {
+            ImGui.spacing();
+            ImGui.textWrapped("Команда для выполнения:");
+            ImGui.textColored(0.4f, 0.8f, 1f, 1f, state.selectedRule.buildCommand(targetName));
+        }
+    }
+
+    private void executeRuleCommand(AssistantState state, String targetName) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) {
+            setStatus(state, "Ошибка: локальный игрок не найден.");
+            return;
+        }
+
+        String command = state.selectedRule.buildCommand(targetName);
+        if (command.isEmpty()) {
+            setStatus(state, "Ошибка: нечего выполнять.");
+            return;
+        }
+
+        mc.player.connection.send(new CChatMessagePacket(command));
+        setStatus(state, "Команда отправлена: " + command);
+    }
+
+    private void executeCheckCommand(String command, CheckState state, String successMessage) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) {
+            setStatus(state, "Ошибка: локальный игрок не найден.");
+            return;
+        }
+
+        mc.player.connection.send(new CChatMessagePacket(command));
+        setStatus(state, successMessage);
+    }
+
+    private void drawRulePopup(String popupName, List<Rule> rules, AssistantState state, String title) {
+        ImGui.setNextWindowSize(520, 480, ImGuiCond.Appearing);
+        if (ImGui.beginPopupModal(popupName)) {
+            ImGui.text(title);
             ImGui.separator();
 
-            List<NetworkPlayerInfo> players = new ArrayList<NetworkPlayerInfo>();
-            if (mc.getConnection() != null) {
-                Collection<NetworkPlayerInfo> online = mc.getConnection().getOnlinePlayers();
-                if (online != null) players.addAll(online);
-                players.sort(Comparator.comparing(p -> p.getProfile().getName().toLowerCase()));
-            }
-
-            if (players.isEmpty()) {
-                ImGui.textDisabled("(онлайн-игроки не найдены или нет подключения)");
+            if (rules.isEmpty()) {
+                ImGui.textDisabled("(список правил пуст)");
             } else {
-                ImGui.beginChild("playersList", 0, -40, true);
-                for (NetworkPlayerInfo info : players) {
-                    GameProfile prof = info.getProfile();
-                    if (prof == null) continue;
-                    String name = prof.getName();
-                    if (name == null || name.isEmpty()) continue;
-                    if (ImGui.selectable(name)) {
-                        selectedPlayerName = name;
-                        useOffline = false;
+                ImGui.beginChild(popupName + "_list", 0, -40, true);
+                for (Rule rule : rules) {
+                    String label = rule.id + " — " + rule.desc;
+                    if (rule.permanent) {
+                        label += " (постоянно)";
+                    } else {
+                        label += " (" + rule.duration + ")";
+                    }
+
+                    if (ImGui.selectable(label)) {
+                        state.selectedRule = rule;
                         ImGui.closeCurrentPopup();
                     }
                 }
@@ -340,75 +430,157 @@ public class ImGuiScreen extends Screen {
         }
     }
 
-    // ================= Выполнение бана =================
-    private String buildCommand(String targetName) {
-        if (selectedRule == null) return "";
-        if ("forever".equals(selectedRule.duration)) {
-            return "/ban " + targetName + " " + selectedRule.commandReason();
+    private void drawPlayerPopup() {
+        ImGui.setNextWindowSize(340, 400, ImGuiCond.Appearing);
+        if (ImGui.beginPopupModal(POPUP_PLAYERS)) {
+            ImGui.text(playerPopupTitle());
+            ImGui.separator();
+
+            List<NetworkPlayerInfo> players = getOnlinePlayers();
+
+            if (players.isEmpty()) {
+                ImGui.textDisabled("(онлайн-игроки не найдены или нет подключения)");
+            } else {
+                ImGui.beginChild("playersList", 0, -40, true);
+                for (NetworkPlayerInfo info : players) {
+                    GameProfile profile = info.getProfile();
+                    if (profile == null) {
+                        continue;
+                    }
+
+                    String name = profile.getName();
+                    if (name == null || name.isEmpty()) {
+                        continue;
+                    }
+
+                    if (ImGui.selectable(name)) {
+                        applyPickedPlayer(name);
+                        ImGui.closeCurrentPopup();
+                    }
+                }
+                ImGui.endChild();
+            }
+
+            if (ImGui.button("Отмена", -1, 0)) {
+                ImGui.closeCurrentPopup();
+            }
+            ImGui.endPopup();
         }
-        return "/tempban " + targetName + " " + selectedRule.duration + " " + selectedRule.commandReason();
     }
 
-    private void executeBan(String targetName) {
+    private String playerPopupTitle() {
+        switch (playerPickerContext) {
+            case BAN:
+                return "Выберите игрока для бана:";
+            case MUTE:
+                return "Выберите игрока для мута:";
+            case CHECK:
+                return "Выберите игрока для проверки:";
+            default:
+                return "Выберите игрока:";
+        }
+    }
+
+    private void openPlayerPopup(PlayerPickerContext context) {
+        playerPickerContext = context;
+        ImGui.openPopup(POPUP_PLAYERS);
+    }
+
+    private void applyPickedPlayer(String name) {
+        switch (playerPickerContext) {
+            case BAN:
+                banState.selectedPlayerName = name;
+                banState.useOffline = false;
+                break;
+            case MUTE:
+                muteState.selectedPlayerName = name;
+                muteState.useOffline = false;
+                break;
+            case CHECK:
+                checkState.selectedPlayerName = name;
+                break;
+        }
+    }
+
+    private List<NetworkPlayerInfo> getOnlinePlayers() {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null) {
-            setStatus("Ошибка: локальный игрок не найден.");
-            return;
+        List<NetworkPlayerInfo> players = new ArrayList<NetworkPlayerInfo>();
+
+        if (mc.getConnection() != null) {
+            Collection<NetworkPlayerInfo> online = mc.getConnection().getOnlinePlayers();
+            if (online != null) {
+                players.addAll(online);
+                players.sort(Comparator.comparing(p -> {
+                    GameProfile profile = p.getProfile();
+                    String name = profile != null ? profile.getName() : "";
+                    return name == null ? "" : name.toLowerCase();
+                }));
+            }
         }
-        String cmd = buildCommand(targetName);
-        if (cmd.isEmpty()) {
-            setStatus("Ошибка: нечего выполнять.");
-            return;
-        }
-        // Отправляем команду от имени клиента, как если бы игрок ввёл её в чат
-        mc.player.connection.send(new CChatMessagePacket(cmd));
-        setStatus("Команда бана отправлена: " + cmd);
+
+        return players;
     }
 
-    private void setStatus(String msg) {
-        statusMessage = msg;
-        statusTimer = 6f;
+    private void setStatus(AssistantState state, String message) {
+        state.statusMessage = message;
+        state.statusTimer = 6f;
     }
 
-    // ================= Окно редактора цветов =================
-    private void drawStyleEditor() {
-        ImGui.begin("Редактор цветов стиля", showStyleEditor, ImGuiWindowFlags.NoCollapse);
-        ImGui.text("Меняй цвета меню прямо на лету (изменения применяются сразу):");
-        ImGui.separator();
+    private void setStatus(CheckState state, String message) {
+        state.statusMessage = message;
+        state.statusTimer = 6f;
+    }
 
-        ImGui.colorEdit4("WindowBg", colWindowBg);
-        ImGui.colorEdit4("TitleBg", colTitleBg);
-        ImGui.colorEdit4("TitleBgActive", colTitleBgActive);
-        ImGui.colorEdit4("TitleBgCollapsed", colTitleBgCollapsed);
-        ImGui.separator();
-        ImGui.colorEdit4("Text", colText);
-        ImGui.colorEdit4("TextDisabled", colTextDisabled);
-        ImGui.separator();
-        ImGui.colorEdit4("Tab", colTab);
-        ImGui.colorEdit4("TabHovered", colTabHovered);
-        ImGui.colorEdit4("TabActive", colTabActive);
-        ImGui.separator();
-        ImGui.colorEdit4("Button", colButton);
-        ImGui.colorEdit4("ButtonHovered", colButtonHovered);
-        ImGui.colorEdit4("ButtonActive", colButtonActive);
-        ImGui.separator();
-        ImGui.colorEdit4("CheckMark", colCheckMark);
-        ImGui.colorEdit4("FrameBg", colFrameBg);
-        ImGui.colorEdit4("FrameBgHovered", colFrameBgHovered);
-        ImGui.colorEdit4("FrameBgActive", colFrameBgActive);
-        ImGui.colorEdit4("Header", colHeader);
-        ImGui.colorEdit4("HeaderHovered", colHeaderHovered);
-        ImGui.colorEdit4("HeaderActive", colHeaderActive);
-
-        ImGui.spacing();
-        ImGui.separator();
-        if (ImGui.button("Сбросить к дефолту (розовый заголовок)")) {
-            resetColorsToDefault();
+    private void renderStatus(AssistantState state) {
+        if (state.statusTimer > 0f && !state.statusMessage.isEmpty()) {
+            ImGui.spacing();
+            ImGui.separator();
+            ImGui.textWrapped(state.statusMessage);
         }
-        ImGui.end();
     }
 
-    // ================= Применение/сброс стилей =================
+    private void renderStatus(CheckState state) {
+        if (state.statusTimer > 0f && !state.statusMessage.isEmpty()) {
+            ImGui.spacing();
+            ImGui.separator();
+            ImGui.textWrapped(state.statusMessage);
+        }
+    }
+
+    private void tickStatusTimers(float deltaTime) {
+        tickStatus(banState, deltaTime);
+        tickStatus(muteState, deltaTime);
+        tickStatus(checkState, deltaTime);
+    }
+
+    private void tickStatus(AssistantState state, float deltaTime) {
+        if (state.statusTimer > 0f) {
+            state.statusTimer -= deltaTime;
+            if (state.statusTimer <= 0f) {
+                state.statusMessage = "";
+            }
+        }
+    }
+
+    private void tickStatus(CheckState state, float deltaTime) {
+        if (state.statusTimer > 0f) {
+            state.statusTimer -= deltaTime;
+            if (state.statusTimer <= 0f) {
+                state.statusMessage = "";
+            }
+        }
+    }
+
+    private void pushDisabledButtonStyle() {
+        ImGui.pushStyleColor(ImGuiCol.Button, colButton[0] * 0.6f, colButton[1] * 0.6f, colButton[2] * 0.6f, colButton[3]);
+        ImGui.pushStyleColor(ImGuiCol.ButtonHovered, colButton[0] * 0.6f, colButton[1] * 0.6f, colButton[2] * 0.6f, colButton[3]);
+        ImGui.pushStyleColor(ImGuiCol.ButtonActive, colButton[0] * 0.6f, colButton[1] * 0.6f, colButton[2] * 0.6f, colButton[3]);
+    }
+
+    private void popDisabledButtonStyle() {
+        ImGui.popStyleColor(3);
+    }
+
     private void applyCurrentColors() {
         ImGuiStyle style = ImGui.getStyle();
 
@@ -441,84 +613,5 @@ public class ImGuiScreen extends Screen {
         style.setWindowPadding(10.0f, 10.0f);
         style.setFramePadding(8.0f, 5.0f);
         style.setItemSpacing(8.0f, 6.0f);
-    }
-
-    private void resetColorsToDefault() {
-        colWindowBg[0] = 30 / 255f;
-        colWindowBg[1] = 30 / 255f;
-        colWindowBg[2] = 35 / 255f;
-        colWindowBg[3] = 220 / 255f;
-        colTitleBg[0] = 245 / 255f;
-        colTitleBg[1] = 70 / 255f;
-        colTitleBg[2] = 130 / 255f;
-        colTitleBg[3] = 220 / 255f;
-        colTitleBgActive[0] = 245 / 255f;
-        colTitleBgActive[1] = 70 / 255f;
-        colTitleBgActive[2] = 130 / 255f;
-        colTitleBgActive[3] = 220 / 255f;
-        colTitleBgCollapsed[0] = 245 / 255f;
-        colTitleBgCollapsed[1] = 70 / 255f;
-        colTitleBgCollapsed[2] = 130 / 255f;
-        colTitleBgCollapsed[3] = 160 / 255f;
-        colText[0] = 1f;
-        colText[1] = 1f;
-        colText[2] = 1f;
-        colText[3] = 1f;
-        colTextDisabled[0] = 180 / 255f;
-        colTextDisabled[1] = 180 / 255f;
-        colTextDisabled[2] = 190 / 255f;
-        colTextDisabled[3] = 140 / 255f;
-        colTab[0] = 42 / 255f;
-        colTab[1] = 42 / 255f;
-        colTab[2] = 42 / 255f;
-        colTab[3] = 180 / 255f;
-        colTabHovered[0] = 60 / 255f;
-        colTabHovered[1] = 60 / 255f;
-        colTabHovered[2] = 65 / 255f;
-        colTabHovered[3] = 200 / 255f;
-        colTabActive[0] = 50 / 255f;
-        colTabActive[1] = 50 / 255f;
-        colTabActive[2] = 55 / 255f;
-        colTabActive[3] = 220 / 255f;
-        colButton[0] = 70 / 255f;
-        colButton[1] = 70 / 255f;
-        colButton[2] = 80 / 255f;
-        colButton[3] = 220 / 255f;
-        colButtonHovered[0] = 90 / 255f;
-        colButtonHovered[1] = 90 / 255f;
-        colButtonHovered[2] = 100 / 255f;
-        colButtonHovered[3] = 230 / 255f;
-        colButtonActive[0] = 110 / 255f;
-        colButtonActive[1] = 110 / 255f;
-        colButtonActive[2] = 120 / 255f;
-        colButtonActive[3] = 240 / 255f;
-        colCheckMark[0] = 245 / 255f;
-        colCheckMark[1] = 70 / 255f;
-        colCheckMark[2] = 130 / 255f;
-        colCheckMark[3] = 1f;
-        colFrameBg[0] = 50 / 255f;
-        colFrameBg[1] = 50 / 255f;
-        colFrameBg[2] = 55 / 255f;
-        colFrameBg[3] = 220 / 255f;
-        colFrameBgHovered[0] = 70 / 255f;
-        colFrameBgHovered[1] = 70 / 255f;
-        colFrameBgHovered[2] = 80 / 255f;
-        colFrameBgHovered[3] = 230 / 255f;
-        colFrameBgActive[0] = 90 / 255f;
-        colFrameBgActive[1] = 90 / 255f;
-        colFrameBgActive[2] = 100 / 255f;
-        colFrameBgActive[3] = 240 / 255f;
-        colHeader[0] = 90 / 255f;
-        colHeader[1] = 40 / 255f;
-        colHeader[2] = 60 / 255f;
-        colHeader[3] = 220 / 255f;
-        colHeaderHovered[0] = 130 / 255f;
-        colHeaderHovered[1] = 55 / 255f;
-        colHeaderHovered[2] = 85 / 255f;
-        colHeaderHovered[3] = 230 / 255f;
-        colHeaderActive[0] = 245 / 255f;
-        colHeaderActive[1] = 70 / 255f;
-        colHeaderActive[2] = 130 / 255f;
-        colHeaderActive[3] = 220 / 255f;
     }
 }
