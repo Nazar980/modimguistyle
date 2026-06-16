@@ -5,7 +5,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.logging.LogUtils;
+import org.apache.logging.log4j.LogManager;
 import edu.unl.csce466.imgui.ImGuiRenderer;
 import imgui.ImGui;
 import imgui.flag.ImGuiConfigFlags;
