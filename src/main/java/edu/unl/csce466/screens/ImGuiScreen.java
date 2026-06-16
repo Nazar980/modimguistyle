@@ -316,10 +316,10 @@ public class ImGuiScreen extends Screen {
     }
 
     private void drawPlayerModeControls(AssistantState state, PlayerPickerContext context) {
-        if (ImGui.radioButton("Онлайн игрок", !state.useOffline)) {
+        if (ImGui.radioButton("Онлайн-игрок (из таб-листа)", !state.useOffline)) {
             state.useOffline = false;
         }
-        if (ImGui.radioButton("Оффлайн", state.useOffline)) {
+        if (ImGui.radioButton("Оффлайн / ник вручную", state.useOffline)) {
             state.useOffline = true;
         }
 
