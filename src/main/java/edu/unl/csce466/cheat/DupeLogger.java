@@ -112,12 +112,12 @@ public class DupeLogger {
                     if (owner == null || owner.startsWith("#")) continue;
 
                     // Собираем полный отображаемый текст: prefix + owner + suffix
-                    // 1.16.5 official: Team.getPlayerPrefix() / getPlayerSuffix()
+                    // 1.16.5 mojang: Team.getPrefix() / getSuffix()
                     String fullText = owner;
                     Team team = scoreboard.getPlayersTeam(owner);
                     if (team != null) {
-                        ITextComponent prefix = team.getPlayerPrefix();
-                        ITextComponent suffix = team.getPlayerSuffix();
+                        ITextComponent prefix = team.getPrefix();
+                        ITextComponent suffix = team.getSuffix();
                         String pre = prefix != null ? prefix.getString() : "";
                         String suf = suffix != null ? suffix.getString() : "";
                         fullText = pre + owner + suf;
@@ -202,8 +202,8 @@ public class DupeLogger {
                 String prefix = "";
                 String suffix = "";
                 if (team != null) {
-                    ITextComponent pre = team.getPlayerPrefix();
-                    ITextComponent suf = team.getPlayerSuffix();
+                    ITextComponent pre = team.getPrefix();
+                    ITextComponent suf = team.getSuffix();
                     prefix = pre != null ? pre.getString() : "";
                     suffix = suf != null ? suf.getString() : "";
                 }
