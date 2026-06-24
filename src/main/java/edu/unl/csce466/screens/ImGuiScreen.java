@@ -11,7 +11,6 @@ import imgui.flag.ImGuiCond;
 import imgui.flag.ImGuiWindowFlags;
 import imgui.type.ImBoolean;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screen.inventory.InventoryScreen;
 import net.minecraft.util.text.StringTextComponent;
 
 public class ImGuiScreen extends net.minecraft.client.gui.screen.Screen {
@@ -28,40 +27,19 @@ public class ImGuiScreen extends net.minecraft.client.gui.screen.Screen {
 
     @Override public boolean isPauseScreen() { return false; }
 
-    // ===== Hitbox state (зеркалим в HitboxManager) =====
+    // ===== Hitbox state =====
     private final ImBoolean hbEnabled = new ImBoolean(HitboxManager.enabled);
     private final ImBoolean hbThroughWalls = new ImBoolean(HitboxManager.throughWalls);
 
-    // Preview
-    private float previewX = 0, previewY = 0;
-    private float previewW = 280, previewH = 320;
-    private float previewYaw = 25f;
-
     @Override
     public void render(MatrixStack poseStack, int mouseX, int mouseY, float partialTick) {
-        Minecraft mc = Minecraft.getInstance();
-
-        // --- 1. Рендерим 3D превью игрока ПОД ImGui, чтобы оно просвечивало через прозрачный Child ---
-        if (previewX != 0 && mc.player != null && mc.level != null) {
-            float px = previewX + previewW * 0.5f;
-            float py = previewY + previewH * 0.78f;
-            int scale = 90;
-
-            // Включаем рендер хитбоксов (F3+B эффект)
-            mc.getEntityRenderDispatcher().setRenderHitBoxes(true);
-            // InventoryScreen.renderEntityInInventory сам пушит матрицы
-            InventoryScreen.renderEntityInInventory((int)px, (int)py, scale, -previewYaw, 0f, mc.player);
-            mc.getEntityRenderDispatcher().setRenderHitBoxes(false);
-        }
-
-        // --- 2. ImGui кадр ---
         ImGuiRenderer renderer = ImGuiRenderer.getInstance();
         renderer.draw(() -> {
             applyArzTheme();
             drawMainWindow();
         });
 
-        // Синхронизируем стейт в HitboxManager
+        // sync back
         HitboxManager.enabled = hbEnabled.get();
         HitboxManager.throughWalls = hbThroughWalls.get();
     }
@@ -79,10 +57,8 @@ public class ImGuiScreen extends net.minecraft.client.gui.screen.Screen {
                 textCentered("Hitboxes");
                 ImGui.separator();
 
-                // Только один пункт
                 ImGui.selectable("Hitboxes", true);
 
-                // низ
                 float bottomY = ImGui.getWindowHeight() - 72;
                 if (ImGui.getCursorPosY() < bottomY) ImGui.setCursorPosY(bottomY);
 
@@ -161,59 +137,63 @@ public class ImGuiScreen extends net.minecraft.client.gui.screen.Screen {
             ImGui.nextColumn();
         }
 
-            // ---- Правая колонка: 3D превью ----
+        // ---- Правая колонка: превью хитбокса ----
         {
             ImGui.text("Предпросмотр");
             ImGui.spacing();
 
-            // Делаем Child с прозрачным фоном, чтобы было видно Minecraft entity рендер под ImGui
-            ImGui.pushStyleColor(ImGuiCol.ChildBg, 0, 0, 0, 0);
-            ImGui.beginChild("##preview_box", previewW, previewH, true, ImGuiWindowFlags.NoScrollbar);
+            float previewH = 320f;
+            float availX = ImGui.getContentRegionAvailX();
+            if (availX < 50) availX = 50;
+
+            ImGui.pushStyleColor(ImGuiCol.ChildBg, 0.10f, 0.10f, 0.10f, 0.55f);
+            ImGui.beginChild("##preview_box", availX, previewH, true, ImGuiWindowFlags.NoScrollbar);
             {
-                // Невидимая зона для захвата мыши
-                ImGui.invisibleButton("##preview_drag", previewW - 16, previewH - 16);
-                boolean hovered = ImGui.isItemHovered();
-                if (hovered && ImGui.isMouseDown(0)) {
-                    previewYaw += ImGui.getIO().getMouseDeltaX() * 0.6f;
-                }
+                float px = ImGui.getWindowPosX();
+                float py = ImGui.getWindowPosY();
+                float pw = ImGui.getWindowWidth();
+                float ph = ImGui.getWindowHeight();
 
-                // Запоминаем экранные координаты этого Child для рендера entity в Screen.render()
-                // imgui-java 1.86: getItemRectMin/Max без аргументов нет, используем MinX/Y / Size
-                previewX = ImGui.getItemRectMinX();
-                previewY = ImGui.getItemRectMinY();
-                previewW = ImGui.getItemRectSizeX();
-                previewH = ImGui.getItemRectSizeY();
-
-                // Подложка / сетка
                 ImDrawList dl = ImGui.getWindowDrawList();
-                float x0 = previewX, y0 = previewY, x1 = x0 + previewW, y1 = y0 + previewH;
-                dl.addRectFilled(x0, y0, x1, y1, ImGui.getColorU32(0.10f, 0.10f, 0.10f, 0.55f), 6f);
-                dl.addRect(x0, y0, x1, y1, ImGui.getColorU32(0.42f, 0.42f, 0.42f, 1f), 6f);
 
-                // Подпись
-                String hint = hovered ? "Тяни мышью для поворота" : "3D превью игрока";
-                float tw = ImGui.calcTextSize(hint).x;
-                dl.addText(x0 + (previewW - tw) * 0.5f, y0 + 8, ImGui.getColorU32(1f,1f,1f,0.7f), hint);
+                // рамка
+                dl.addRect(px, py, px + pw, py + ph, ImGui.getColorU32(0.42f, 0.42f, 0.42f, 1f), 6f);
 
-                // Визуальный 2D бокс хитбокса поверх (в дополнение к реальному 3D хитбоксу от MC)
-                float boxW = 70f * (HitboxManager.width / 0.6f);
-                float boxH = 190f * (HitboxManager.height / 1.8f);
-                boxW = Math.max(20, Math.min(boxW, previewW - 20));
-                boxH = Math.max(30, Math.min(boxH, previewH - 60));
-                float bx0 = x0 + (previewW - boxW) * 0.5f;
-                float by1 = y0 + previewH - 28;
+                // хитбокс - масштабируем от реального размера
+                float boxW = 80f * (HitboxManager.width / 0.6f);
+                float boxH = 220f * (HitboxManager.height / 1.8f);
+                boxW = Math.max(20f, Math.min(boxW, pw - 20f));
+                boxH = Math.max(30f, Math.min(boxH, ph - 60f));
+
+                float bx0 = px + (pw - boxW) * 0.5f;
+                float by1 = py + ph - 30f;
                 float by0 = by1 - boxH;
-                int col = ImGui.getColorU32(HitboxManager.color[0], HitboxManager.color[1], HitboxManager.color[2], HitboxManager.color[3]);
-                dl.addRect(bx0, by0, bx0 + boxW, by1, col, 0f, 0, 2f);
 
+                int col = ImGui.getColorU32(
+                    HitboxManager.color[0],
+                    HitboxManager.color[1],
+                    HitboxManager.color[2],
+                    HitboxManager.color[3]
+                );
+
+                // тень / фон
+                dl.addRectFilled(bx0, by0, bx0 + boxW, by1, ImGui.getColorU32(0.15f, 0.15f, 0.15f, 0.6f), 2f);
+                // сам бокс
+                dl.addRect(bx0, by0, bx0 + boxW, by1, col, 2f, 0, 2.5f);
+
+                // подписи
                 String sizeTxt = String.format("%.2f x %.2f", HitboxManager.width, HitboxManager.height);
                 float stw = ImGui.calcTextSize(sizeTxt).x;
-                dl.addText(bx0 + (boxW - stw) * 0.5f, by0 - 18, col, sizeTxt);
+                dl.addText(bx0 + (boxW - stw) * 0.5f, by0 - 18f, col, sizeTxt);
+
+                String hint = "Hitbox preview";
+                float htw = ImGui.calcTextSize(hint).x;
+                dl.addText(px + (pw - htw) * 0.5f, py + 8f, ImGui.getColorU32(1f, 1f, 1f, 0.7f), hint);
             }
             ImGui.endChild();
             ImGui.popStyleColor();
 
-            ImGui.textDisabled("Крути модель ЛКМ");
+            ImGui.textDisabled(String.format("W: %.2f  H: %.2f", HitboxManager.width, HitboxManager.height));
         }
 
         ImGui.columns(1);
