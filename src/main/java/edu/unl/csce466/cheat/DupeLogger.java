@@ -112,11 +112,12 @@ public class DupeLogger {
                     if (owner == null || owner.startsWith("#")) continue;
 
                     // Собираем полный отображаемый текст: prefix + owner + suffix
+                    // 1.16.5 official: Team.getPlayerPrefix() / getPlayerSuffix()
                     String fullText = owner;
                     Team team = scoreboard.getPlayersTeam(owner);
                     if (team != null) {
-                        ITextComponent prefix = team.getPrefix();
-                        ITextComponent suffix = team.getSuffix();
+                        ITextComponent prefix = team.getPlayerPrefix();
+                        ITextComponent suffix = team.getPlayerSuffix();
                         String pre = prefix != null ? prefix.getString() : "";
                         String suf = suffix != null ? suffix.getString() : "";
                         fullText = pre + owner + suf;
@@ -171,7 +172,7 @@ public class DupeLogger {
         } catch (Exception ignored) {}
     }
 
-    /** Дамп всего скорборда в чат + в буфер обмена, для отладки парсинга монет */
+    /** Дамп всего скорборда в чат, для отладки парсинга монет */
     public static String dumpScoreboard() {
         Minecraft mc = Minecraft.getInstance();
         StringBuilder out = new StringBuilder();
@@ -201,8 +202,8 @@ public class DupeLogger {
                 String prefix = "";
                 String suffix = "";
                 if (team != null) {
-                    ITextComponent pre = team.getPrefix();
-                    ITextComponent suf = team.getSuffix();
+                    ITextComponent pre = team.getPlayerPrefix();
+                    ITextComponent suf = team.getPlayerSuffix();
                     prefix = pre != null ? pre.getString() : "";
                     suffix = suf != null ? suf.getString() : "";
                 }
@@ -213,18 +214,14 @@ public class DupeLogger {
                         i++, full.replace("§", "&"), clean, score.getScore());
                 out.append(line);
 
-                // в чат тоже, но коротко
+                // в чат тоже, коротко
                 logToChat("§8[" + score.getScore() + "] §f" + clean);
             }
 
             String result = out.toString();
-            // в буфер обмена
-            try {
-                mc.keyboardHandler.setClipboardString(result);
-                logToChat("§aСкорборд скопирован в буфер обмена!");
-            } catch (Exception e) {
-                logToChat("§cНе удалось скопировать в буфер: " + e.getMessage());
-            }
+            logToChat("§aДамп завершён, всего строк: " + i);
+            logToChat("§7Полный дамп смотри в latest.log");
+            System.out.println(result);
             return result;
 
         } catch (Exception e) {
