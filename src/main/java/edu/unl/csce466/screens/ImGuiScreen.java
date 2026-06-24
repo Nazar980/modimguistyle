@@ -102,7 +102,7 @@ public class ImGuiScreen extends net.minecraft.client.gui.screen.Screen {
             // === Левая панель - Сайдбар ===
             ImGui.beginChild("##sidebar", 190, 0, true);
             {
-                ImGui.text("Меню");
+                textCentered("Меню");
                 ImGui.separator();
 
                 if (selectableTab(Tab.SETTINGS)) activeTab = Tab.SETTINGS;
@@ -113,7 +113,7 @@ public class ImGuiScreen extends net.minecraft.client.gui.screen.Screen {
                 if (selectableTab(Tab.REPO)) activeTab = Tab.REPO;
 
                 ImGui.spacing(); ImGui.separator(); ImGui.spacing();
-                ImGui.textDisabled("Функции");
+                textCenteredDisabled("Функции");
                 if (selectableTab(Tab.FUN_PLAYER)) activeTab = Tab.FUN_PLAYER;
                 if (selectableTab(Tab.FUN_VISUAL)) activeTab = Tab.FUN_VISUAL;
                 if (selectableTab(Tab.FUN_COMBAT)) activeTab = Tab.FUN_COMBAT;
@@ -124,10 +124,11 @@ public class ImGuiScreen extends net.minecraft.client.gui.screen.Screen {
                 if (ImGui.getCursorPosY() < bottomY) ImGui.setCursorPosY(bottomY);
 
                 ImGui.separator();
+                textCentered("Настройки меню");
                 ImGui.text("Тема");
                 ImGui.setNextItemWidth(-1);
                 if (ImGui.combo("##theme", themeIdx, themes)) {
-                    // переключение темы - у нас одна ARZ тема, но можно хукать
+                    // переключение темы
                 }
                 ImGui.text("Стиль");
                 ImGui.setNextItemWidth(-1);
@@ -173,7 +174,7 @@ public class ImGuiScreen extends net.minecraft.client.gui.screen.Screen {
     }
 
     private void drawSettingsTab() {
-        ImGui.text("Основные");
+        textCentered("Основные");
         ImGui.separator();
 
         // 3 колонки
@@ -221,18 +222,19 @@ public class ImGuiScreen extends net.minecraft.client.gui.screen.Screen {
         ImGui.spacing(); ImGui.separator(); ImGui.spacing();
 
         // Радиус слайдер
-        ImGui.text("Радиус");
-        ImGui.sameLine();
-        helpMarker("Радиус действия функций");
-        ImGui.setNextItemWidth(280);
+        textCentered("Радиус действия");
+        ImGui.spacing();
+        ImGui.setNextItemWidth(-80);
         ImGui.sliderFloat("##radius", radius.getData(), 1.0f, 50.0f, "%.0f");
         ImGui.sameLine();
-        ImGui.textDisabled(String.format("%.0f", radius.get()));
+        ImGui.textDisabled(String.format("%.0f м", radius.get()));
+        ImGui.sameLine();
+        helpMarker("Радиус действия функций");
 
         ImGui.spacing(); ImGui.separator(); ImGui.spacing();
 
         // Вил Чат
-        ImGui.text("Вил Чат");
+        textCentered("Вил Чат");
         ImGui.spacing();
         ImGui.setNextItemWidth(-1);
         ImGui.inputText("##vip1", vipChat1);
@@ -248,7 +250,7 @@ public class ImGuiScreen extends net.minecraft.client.gui.screen.Screen {
     }
 
     private void drawInfoTab() {
-        ImGui.text("Информация");
+        textCentered("Информация");
         ImGui.separator();
         ImGui.textWrapped("ARZ Assistant - ImGui чит-меню для Minecraft 1.16.5 Forge");
         ImGui.bulletText("Открытие меню: L");
@@ -259,12 +261,26 @@ public class ImGuiScreen extends net.minecraft.client.gui.screen.Screen {
     }
 
     private void drawPlaceholder(String title, String desc) {
-        ImGui.text(title);
+        textCentered(title);
         ImGui.separator();
         ImGui.textDisabled(desc);
     }
 
     // ===== Helpers =====
+
+    private void textCentered(String text) {
+        float windowWidth = ImGui.getWindowContentRegionMaxX() - ImGui.getWindowContentRegionMinX();
+        float textWidth = ImGui.calcTextSize(text).x;
+        ImGui.setCursorPosX(ImGui.getCursorPosX() + (windowWidth - textWidth) * 0.5f);
+        ImGui.text(text);
+    }
+
+    private void textCenteredDisabled(String text) {
+        float windowWidth = ImGui.getWindowContentRegionMaxX() - ImGui.getWindowContentRegionMinX();
+        float textWidth = ImGui.calcTextSize(text).x;
+        ImGui.setCursorPosX(ImGui.getCursorPosX() + (windowWidth - textWidth) * 0.5f);
+        ImGui.textDisabled(text);
+    }
 
     private void checkboxRed(String label, ImBoolean v, String tooltip) {
         ImGui.checkbox(label, v);
@@ -339,7 +355,6 @@ public class ImGuiScreen extends net.minecraft.client.gui.screen.Screen {
         style.setGrabMinSize(8f);
         style.setGrabRounding(1f);
         style.setWindowTitleAlign(0.5f, 0.5f);
-        // ButtonTextAlign в imgui-java нет прямого доступа, не критично
 
         // colors
         setCol(ImGuiCol.Text, 0.95f, 0.96f, 0.98f, 1.00f);
@@ -369,9 +384,12 @@ public class ImGuiScreen extends net.minecraft.client.gui.screen.Screen {
         setCol(ImGuiCol.Header, 1.00f, 0.28f, 0.28f, 1.00f);
         setCol(ImGuiCol.HeaderHovered, 1.00f, 0.39f, 0.39f, 1.00f);
         setCol(ImGuiCol.HeaderActive, 1.00f, 0.21f, 0.21f, 1.00f);
-        setCol(ImGuiCol.Separator, 0.14f, 0.14f, 0.14f, 1.0f);
-        setCol(ImGuiCol.SeparatorHovered, 0.40f, 0.40f, 0.40f, 1.0f);
-        setCol(ImGuiCol.SeparatorActive, 1.00f, 0.28f, 0.28f, 1.0f);
+
+        // Разделители - СВЕТЛЕЕ, чтобы было видно
+        setCol(ImGuiCol.Separator, 0.42f, 0.42f, 0.42f, 1.00f);
+        setCol(ImGuiCol.SeparatorHovered, 0.60f, 0.28f, 0.28f, 1.00f);
+        setCol(ImGuiCol.SeparatorActive, 1.00f, 0.28f, 0.28f, 1.00f);
+
         setCol(ImGuiCol.ResizeGrip, 1.00f, 0.28f, 0.28f, 1.00f);
         setCol(ImGuiCol.ResizeGripHovered, 1.00f, 0.39f, 0.39f, 1.00f);
         setCol(ImGuiCol.ResizeGripActive, 1.00f, 0.19f, 0.19f, 1.00f);
