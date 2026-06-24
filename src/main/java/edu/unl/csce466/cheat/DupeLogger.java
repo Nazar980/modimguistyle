@@ -7,7 +7,6 @@ import net.minecraft.item.Items;
 import net.minecraft.scoreboard.Score;
 import net.minecraft.scoreboard.ScoreObjective;
 import net.minecraft.scoreboard.Scoreboard;
-import net.minecraft.util.StringUtil;
 import net.minecraft.util.Util;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraftforge.event.TickEvent;
@@ -111,8 +110,8 @@ public class DupeLogger {
                     String owner = score.getOwner();
                     if (owner == null || owner.startsWith("#")) continue;
 
-                    // Убираем цветовые коды §x
-                    String clean = StringUtil.stripColor(owner);
+                    // Убираем цветовые коды §x - 1.16.5
+                    String clean = owner.replaceAll("§[0-9a-fk-or]", "");
                     if (clean == null) clean = owner;
 
                     // ищем "монет"
