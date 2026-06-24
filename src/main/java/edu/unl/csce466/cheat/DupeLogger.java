@@ -6,6 +6,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.scoreboard.Score;
 import net.minecraft.scoreboard.ScoreObjective;
+import net.minecraft.scoreboard.ScorePlayerTeam;
 import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.scoreboard.Team;
 import net.minecraft.util.Util;
@@ -43,6 +44,30 @@ public class DupeLogger {
         lastCoinsStr = "?";
         lastEmeraldCount = 0;
         logToChat("§7Счётчики сброшены.");
+    }
+
+    private static String getTeamPrefixSuffix(Team team) {
+        if (team instanceof ScorePlayerTeam) {
+            ScorePlayerTeam spt = (ScorePlayerTeam) team;
+            ITextComponent pre = spt.getPlayerPrefix();
+            ITextComponent suf = spt.getPlayerSuffix();
+            String p = pre != null ? pre.getString() : "";
+            String s = suf != null ? suf.getString() : "";
+            return p + s;
+        }
+        return "";
+    }
+
+    private static String getTeamFullText(Team team, String owner) {
+        if (team instanceof ScorePlayerTeam) {
+            ScorePlayerTeam spt = (ScorePlayerTeam) team;
+            ITextComponent pre = spt.getPlayerPrefix();
+            ITextComponent suf = spt.getPlayerSuffix();
+            String p = pre != null ? pre.getString() : "";
+            String s = suf != null ? suf.getString() : "";
+            return p + owner + s;
+        }
+        return owner;
     }
 
     @SubscribeEvent
@@ -112,16 +137,8 @@ public class DupeLogger {
                     if (owner == null || owner.startsWith("#")) continue;
 
                     // Собираем полный отображаемый текст: prefix + owner + suffix
-                    // 1.16.5 mojang: Team.getPrefix() / getSuffix()
-                    String fullText = owner;
                     Team team = scoreboard.getPlayersTeam(owner);
-                    if (team != null) {
-                        ITextComponent prefix = team.getPrefix();
-                        ITextComponent suffix = team.getSuffix();
-                        String pre = prefix != null ? prefix.getString() : "";
-                        String suf = suffix != null ? suffix.getString() : "";
-                        fullText = pre + owner + suf;
-                    }
+                    String fullText = getTeamFullText(team, owner);
 
                     // Чистим цветовые коды §x
                     String clean = fullText.replaceAll("§[0-9a-fk-or]", "");
@@ -199,15 +216,7 @@ public class DupeLogger {
                 String owner = score.getOwner();
                 Team team = scoreboard.getPlayersTeam(owner);
 
-                String prefix = "";
-                String suffix = "";
-                if (team != null) {
-                    ITextComponent pre = team.getPrefix();
-                    ITextComponent suf = team.getSuffix();
-                    prefix = pre != null ? pre.getString() : "";
-                    suffix = suf != null ? suf.getString() : "";
-                }
-                String full = prefix + owner + suffix;
+                String full = getTeamFullText(team, owner);
                 String clean = full.replaceAll("§[0-9a-fk-or]", "");
 
                 String line = String.format("%02d | raw='%s' | clean='%s' | score=%d\n",
