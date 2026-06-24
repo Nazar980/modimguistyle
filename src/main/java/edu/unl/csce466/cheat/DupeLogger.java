@@ -7,7 +7,9 @@ import net.minecraft.item.Items;
 import net.minecraft.scoreboard.Score;
 import net.minecraft.scoreboard.ScoreObjective;
 import net.minecraft.scoreboard.Scoreboard;
+import net.minecraft.scoreboard.Team;
 import net.minecraft.util.Util;
+import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -102,7 +104,6 @@ public class DupeLogger {
         // ---- 2. Монеты из скорборда ----
         try {
             Scoreboard scoreboard = mc.level.getScoreboard();
-            // 1.16.5 official: getDisplayObjective(int slot)
             ScoreObjective objective = scoreboard.getDisplayObjective(1); // 1 = SIDEBAR
             if (objective != null) {
                 Collection<Score> scores = scoreboard.getPlayerScores(objective);
@@ -110,13 +111,26 @@ public class DupeLogger {
                     String owner = score.getOwner();
                     if (owner == null || owner.startsWith("#")) continue;
 
-                    // Убираем цветовые коды §x - 1.16.5
-                    String clean = owner.replaceAll("§[0-9a-fk-or]", "");
-                    if (clean == null) clean = owner;
+                    // Собираем полный отображаемый текст: prefix + owner + suffix
+                    String fullText = owner;
+                    Team team = scoreboard.getPlayersTeam(owner);
+                    if (team != null) {
+                        ITextComponent prefix = team.getPrefix();
+                        ITextComponent suffix = team.getSuffix();
+                        String pre = prefix != null ? prefix.getString() : "";
+                        String suf = suffix != null ? suffix.getString() : "";
+                        fullText = pre + owner + suf;
+                    }
 
-                    // ищем "монет"
+                    // Чистим цветовые коды §x
+                    String clean = fullText.replaceAll("§[0-9a-fk-or]", "");
+
                     String lower = clean.toLowerCase();
-                    if (lower.contains("монет") || lower.contains("coin") || lower.contains("$") || lower.contains("руб")) {
+                    // ищем монеты по разным ключевым словам
+                    if (lower.contains("монет") || lower.contains("coin") || lower.contains("$")
+                            || lower.contains("руб") || lower.contains("bal") || lower.contains("money")
+                            || lower.contains("баланс") || lower.contains("валюта")) {
+
                         Matcher m = COIN_NUMBER.matcher(clean);
                         String lastNum = null;
                         while (m.find()) {
@@ -136,11 +150,10 @@ public class DupeLogger {
                                     String msg = sign + "Монеты " + (delta > 0 ? "+" : "") + delta
                                             + " §8(стало " + coins + ")";
 
-                                    // если недавно был изумруд - показываем задержку
                                     if (delta < 0 && lastEmeraldGainMs > 0) {
                                         long delay = nowMs - lastEmeraldGainMs;
                                         msg += " §e[задержка после изумруда: " + delay + "ms]";
-                                        if (delay >= 200 && delay <= 600) {
+                                        if (delay >= 150 && delay <= 800) {
                                             msg += " §a§lDUP WINDOW!";
                                         }
                                         lastEmeraldGainMs = 0;
@@ -156,6 +169,69 @@ public class DupeLogger {
                 }
             }
         } catch (Exception ignored) {}
+    }
+
+    /** Дамп всего скорборда в чат + в буфер обмена, для отладки парсинга монет */
+    public static String dumpScoreboard() {
+        Minecraft mc = Minecraft.getInstance();
+        StringBuilder out = new StringBuilder();
+        out.append("=== SCOREBOARD DUMP ===\n");
+
+        try {
+            if (mc.level == null) {
+                logToChat("§cМир не загружен");
+                return "";
+            }
+            Scoreboard scoreboard = mc.level.getScoreboard();
+            ScoreObjective objective = scoreboard.getDisplayObjective(1);
+            if (objective == null) {
+                logToChat("§cСкорборд (SIDEBAR) не найден");
+                return "";
+            }
+
+            out.append("Objective: ").append(objective.getName())
+               .append(" / ").append(objective.getDisplayName().getString()).append("\n\n");
+
+            Collection<Score> scores = scoreboard.getPlayerScores(objective);
+            int i = 0;
+            for (Score score : scores) {
+                String owner = score.getOwner();
+                Team team = scoreboard.getPlayersTeam(owner);
+
+                String prefix = "";
+                String suffix = "";
+                if (team != null) {
+                    ITextComponent pre = team.getPrefix();
+                    ITextComponent suf = team.getSuffix();
+                    prefix = pre != null ? pre.getString() : "";
+                    suffix = suf != null ? suf.getString() : "";
+                }
+                String full = prefix + owner + suffix;
+                String clean = full.replaceAll("§[0-9a-fk-or]", "");
+
+                String line = String.format("%02d | raw='%s' | clean='%s' | score=%d\n",
+                        i++, full.replace("§", "&"), clean, score.getScore());
+                out.append(line);
+
+                // в чат тоже, но коротко
+                logToChat("§8[" + score.getScore() + "] §f" + clean);
+            }
+
+            String result = out.toString();
+            // в буфер обмена
+            try {
+                mc.keyboardHandler.setClipboardString(result);
+                logToChat("§aСкорборд скопирован в буфер обмена!");
+            } catch (Exception e) {
+                logToChat("§cНе удалось скопировать в буфер: " + e.getMessage());
+            }
+            return result;
+
+        } catch (Exception e) {
+            logToChat("§cОшибка дампа: " + e.getMessage());
+            e.printStackTrace();
+            return out.toString();
+        }
     }
 
     public static void logToChat(String msg) {
