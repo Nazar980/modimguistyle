@@ -161,7 +161,7 @@ public class ImGuiScreen extends net.minecraft.client.gui.screen.Screen {
             ImGui.nextColumn();
         }
 
-        // ---- Правая колонка: 3D превью ----
+            // ---- Правая колонка: 3D превью ----
         {
             ImGui.text("Предпросмотр");
             ImGui.spacing();
@@ -178,10 +178,9 @@ public class ImGuiScreen extends net.minecraft.client.gui.screen.Screen {
                 }
 
                 // Запоминаем экранные координаты этого Child для рендера entity в Screen.render()
-                float[] pos = new float[2];
-                ImGui.getItemRectMin(pos);
-                previewX = pos[0];
-                previewY = pos[1];
+                // imgui-java 1.86: getItemRectMin/Max без аргументов нет, используем MinX/Y / Size
+                previewX = ImGui.getItemRectMinX();
+                previewY = ImGui.getItemRectMinY();
                 previewW = ImGui.getItemRectSizeX();
                 previewH = ImGui.getItemRectSizeY();
 
