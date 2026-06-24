@@ -1,714 +1,394 @@
 package edu.unl.csce466.screens;
 
-import com.mojang.authlib.GameProfile;
 import com.mojang.blaze3d.matrix.MatrixStack;
+import edu.unl.csce466.cheat.CheatManager;
 import edu.unl.csce466.imgui.ImGuiRenderer;
 import imgui.ImGui;
 import imgui.ImGuiIO;
 import imgui.ImGuiStyle;
 import imgui.flag.ImGuiCol;
 import imgui.flag.ImGuiCond;
-import imgui.flag.ImGuiSelectableFlags;
 import imgui.flag.ImGuiWindowFlags;
 import imgui.type.ImBoolean;
+import imgui.type.ImFloat;
+import imgui.type.ImInt;
 import imgui.type.ImString;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.network.play.NetworkPlayerInfo;
-import net.minecraft.network.play.client.CChatMessagePacket;
 import net.minecraft.util.text.StringTextComponent;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.List;
+public class ImGuiScreen extends net.minecraft.client.gui.screen.Screen {
 
-public class ImGuiScreen extends Screen {
     private static ImGuiScreen INSTANCE = null;
-
-    private static final String POPUP_BAN_RULES = "SelectBanRulePopup";
-    private static final String POPUP_BAN_PLAYERS = "SelectBanPlayerPopup";
-    private static final String POPUP_MUTE_RULES = "SelectMuteRulePopup";
-    private static final String POPUP_MUTE_PLAYERS = "SelectMutePlayerPopup";
-    private static final String POPUP_CHECK_PLAYERS = "SelectCheckPlayerPopup";
-
-    private final float[] colWindowBg = {14 / 255f, 14 / 255f, 16 / 255f, 236 / 255f};
-    private final float[] colTitleBg = {28 / 255f, 28 / 255f, 30 / 255f, 245 / 255f};
-    private final float[] colTitleBgActive = {44 / 255f, 44 / 255f, 46 / 255f, 245 / 255f};
-    private final float[] colTitleBgCollapsed = {24 / 255f, 24 / 255f, 26 / 255f, 210 / 255f};
-    private final float[] colText = {1f, 1f, 1f, 1f};
-    private final float[] colTextDisabled = {160 / 255f, 160 / 255f, 160 / 255f, 140 / 255f};
-    private final float[] colTab = {36 / 255f, 36 / 255f, 38 / 255f, 180 / 255f};
-    private final float[] colTabHovered = {60 / 255f, 60 / 255f, 62 / 255f, 210 / 255f};
-    private final float[] colTabActive = {78 / 255f, 78 / 255f, 80 / 255f, 235 / 255f};
-    private final float[] colButton = {54 / 255f, 54 / 255f, 56 / 255f, 230 / 255f};
-    private final float[] colButtonHovered = {82 / 255f, 82 / 255f, 84 / 255f, 240 / 255f};
-    private final float[] colButtonActive = {118 / 255f, 118 / 255f, 120 / 255f, 245 / 255f};
-    private final float[] colCheckMark = {1f, 1f, 1f, 1f};
-    private final float[] colFrameBg = {34 / 255f, 34 / 255f, 36 / 255f, 225 / 255f};
-    private final float[] colFrameBgHovered = {48 / 255f, 48 / 255f, 50 / 255f, 236 / 255f};
-    private final float[] colFrameBgActive = {70 / 255f, 70 / 255f, 72 / 255f, 242 / 255f};
-    private final float[] colHeader = {40 / 255f, 40 / 255f, 42 / 255f, 225 / 255f};
-    private final float[] colHeaderHovered = {60 / 255f, 60 / 255f, 62 / 255f, 235 / 255f};
-    private final float[] colHeaderActive = {88 / 255f, 88 / 255f, 90 / 255f, 240 / 255f};
-
-    private static class Rule {
-        final String id;
-        final String desc;
-        final String duration;
-        final boolean permanent;
-
-        Rule(String id, String desc, String duration, boolean permanent) {
-            this.id = id;
-            this.desc = desc;
-            this.duration = duration;
-            this.permanent = permanent;
-        }
-
-        String reason() {
-            return id + " [" + desc + "]";
-        }
-    }
-
-    private static class ActionState {
-        Rule selectedRule = null;
-        String selectedPlayerName = "";
-        final ImString offlineNameBuf = new ImString("", 32);
-        boolean useOffline = false;
-        String statusMessage = "";
-        float statusTimer = 0f;
-    }
-
-    private static class CheckState {
-        String selectedPlayerName = "";
-        String statusMessage = "";
-        float statusTimer = 0f;
-    }
-
-    private static final List<Rule> BAN_RULES = new ArrayList<Rule>();
-    private static final List<Rule> MUTE_RULES = new ArrayList<Rule>();
-
-    static {
-        BAN_RULES.add(new Rule("1.1.2", "Пиар проектов (серверов, чатов, читов и т.д.)", "12d", false));
-        BAN_RULES.add(new Rule("1.5", "Использование читов", "14d", false));
-        BAN_RULES.add(new Rule("1.5.1", "Тим с читером", "8d", false));
-        BAN_RULES.add(new Rule("1.5.2", "Клан читеров (каждый)", "14d", false));
-        BAN_RULES.add(new Rule("1.6", "Признание в использовании читов", "12d", false));
-        BAN_RULES.add(new Rule("1.7", "Ник похож на ник администрации / ютуберов", "", true));
-        BAN_RULES.add(new Rule("1.8", "Использование DDoS-пакетов", "28d", false));
-        BAN_RULES.add(new Rule("1.8.1", "Попытка краша сервера", "", true));
-        BAN_RULES.add(new Rule("1.9", "Отказ от проверки", "14d", false));
-        BAN_RULES.add(new Rule("2.0", "Задерживание модератора во время проверки", "14d", false));
-        BAN_RULES.add(new Rule("2.1", "Выдача себя за модерацию проекта", "20d", false));
-        BAN_RULES.add(new Rule("2.5", "Больше 5 аккаунтов в бане (каждый новый аккаунт)", "14d", false));
-        BAN_RULES.add(new Rule("2.6", "Обход бана", "", true));
-        BAN_RULES.add(new Rule("2.7", "Покупка доната через сторонние маркетплейсы", "", true));
-
-        MUTE_RULES.add(new Rule("1.1", "Спам (флуд)", "30m", false));
-        MUTE_RULES.add(new Rule("1.1.3", "КАПС", "30m", false));
-        MUTE_RULES.add(new Rule("1.2", "Массивное оскорбление", "1h", false));
-        MUTE_RULES.add(new Rule("1.3", "Организация флуда в чате с помощью опроса", "4h", false));
-        MUTE_RULES.add(new Rule("1.4", "Упоминание родителей", "12h", false));
-        MUTE_RULES.add(new Rule("1.4.1", "Оскорбление проекта и модераторов сервера", "6h", false));
-    }
-
-    private final ActionState banState = new ActionState();
-    private final ActionState muteState = new ActionState();
-    private final CheckState checkState = new CheckState();
-
-    private enum PlayerPopupContext {
-        BAN,
-        MUTE,
-        CHECK
-    }
-
-    private PlayerPopupContext playerPopupContext = PlayerPopupContext.BAN;
-    private final ImBoolean showStyleEditor = new ImBoolean(false);
-    private final ImBoolean showDemo = new ImBoolean(false);
-
     public static ImGuiScreen getInstance() {
-        if (INSTANCE == null) {
-            INSTANCE = new ImGuiScreen();
-        }
+        if (INSTANCE == null) INSTANCE = new ImGuiScreen();
         return INSTANCE;
     }
 
     private ImGuiScreen() {
-        super(new StringTextComponent("Помощник модерации"));
+        super(new StringTextComponent("ARZ Assistant"));
     }
 
-    @Override
-    public boolean isPauseScreen() {
-        return false;
-    }
+    @Override public boolean isPauseScreen() { return false; }
 
+    // ===== State =====
+    private enum Tab {
+        SETTINGS("Настройки"),
+        INFO("Информация"),
+        NOTIFY("Уведомления"),
+        AUTOFILL("Автозаполнение"),
+        AUTOEAT("Автохавка"),
+        REPO("Репозиторий"),
+        // Функции
+        FUN_PLAYER("Игрок"),
+        FUN_VISUAL("Визуалы"),
+        FUN_COMBAT("Бой"),
+        FUN_MISC("Разное");
+
+        final String label;
+        Tab(String label){ this.label = label; }
+    }
+    private Tab activeTab = Tab.SETTINGS;
+
+    // Настройки - колонка 1
+    private final ImBoolean antiBlockedPlayer = new ImBoolean(CheatManager.flyEnabled);
+    private final ImBoolean shieldControl = new ImBoolean(false);
+    private final ImBoolean bunnyhop = new ImBoolean(false);
+    private final ImBoolean fastRun = new ImBoolean(false);
+    private final ImBoolean antiDebuff = new ImBoolean(false);
+    private final ImBoolean antiStun = new ImBoolean(false);
+    private final ImBoolean antiCrash = new ImBoolean(false);
+
+    // колонка 2
+    private final ImBoolean fastConnect = new ImBoolean(false);
+    private final ImBoolean sbivAnim = new ImBoolean(false);
+    private final ImBoolean antiAFK = new ImBoolean(false);
+    private final ImBoolean adminSpec = new ImBoolean(false);
+
+    // колонка 3
+    private final ImBoolean phone = new ImBoolean(false);
+    private final ImBoolean mask = new ImBoolean(false);
+    private final ImBoolean armor = new ImBoolean(false);
+    private final ImBoolean fisheye = new ImBoolean(false);
+
+    // Специальные виджеты
+    private final ImFloat radius = new ImFloat(12.0f);
+    private final ImString vipChat1 = new ImString(128);
+    private final ImString vipChat2 = new ImString(128);
+    private final ImString vipChat3 = new ImString(128);
+
+    // Сайдбар низ
+    private final String[] themes = { "Тёмная", "Светлая", "ARZ Red", "Aqua" };
+    private final String[] styles = { "Компактный", "Стандарт", "Большой" };
+    private final ImInt themeIdx = new ImInt(2);
+    private final ImInt styleIdx = new ImInt(1);
+
+    // ===== Render =====
     @Override
     public void render(MatrixStack poseStack, int mouseX, int mouseY, float partialTick) {
         ImGuiRenderer renderer = ImGuiRenderer.getInstance();
-        Minecraft mc = Minecraft.getInstance();
-        ImGuiIO io = ImGui.getIO();
-
-        tickStatuses(io.getDeltaTime());
-
         renderer.draw(() -> {
-            applyCurrentColors();
-
-            drawMainMenuBar();
-
-            drawBanAssistant(mc, io);
-            drawMuteAssistant(mc, io);
-            drawCheckAssistant(mc, io);
-
-            if (showStyleEditor.get()) {
-                drawStyleEditor();
-            }
-            if (showDemo.get()) {
-                ImGui.showDemoWindow(showDemo);
-            }
+            applyArzTheme();
+            drawMainWindow();
         });
     }
 
-    private void drawMainMenuBar() {
-        if (ImGui.beginMainMenuBar()) {
-            if (ImGui.beginMenu("Окна")) {
-                if (ImGui.menuItem("Редактор цветов", "", showStyleEditor.get())) {
-                    showStyleEditor.set(!showStyleEditor.get());
+    private void drawMainWindow() {
+        ImGui.setNextWindowSize(920, 540, ImGuiCond.FirstUseEver);
+        ImGui.setNextWindowPos(ImGui.getIO().getDisplaySizeX() * 0.5f, ImGui.getIO().getDisplaySizeY() * 0.5f, ImGuiCond.FirstUseEver, 0.5f, 0.5f);
+
+        int windowFlags = ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse;
+        if (ImGui.begin("ARZ Assistant  |  by Root3287", windowFlags)) {
+
+            // === Левая панель - Сайдбар ===
+            ImGui.beginChild("##sidebar", 190, 0, true);
+            {
+                ImGui.text("Меню");
+                ImGui.separator();
+
+                if (selectableTab(Tab.SETTINGS)) activeTab = Tab.SETTINGS;
+                if (selectableTab(Tab.INFO)) activeTab = Tab.INFO;
+                if (selectableTab(Tab.NOTIFY)) activeTab = Tab.NOTIFY;
+                if (selectableTab(Tab.AUTOFILL)) activeTab = Tab.AUTOFILL;
+                if (selectableTab(Tab.AUTOEAT)) activeTab = Tab.AUTOEAT;
+                if (selectableTab(Tab.REPO)) activeTab = Tab.REPO;
+
+                ImGui.spacing(); ImGui.separator(); ImGui.spacing();
+                ImGui.textDisabled("Функции");
+                if (selectableTab(Tab.FUN_PLAYER)) activeTab = Tab.FUN_PLAYER;
+                if (selectableTab(Tab.FUN_VISUAL)) activeTab = Tab.FUN_VISUAL;
+                if (selectableTab(Tab.FUN_COMBAT)) activeTab = Tab.FUN_COMBAT;
+                if (selectableTab(Tab.FUN_MISC)) activeTab = Tab.FUN_MISC;
+
+                // низ сайдбара - прижать к низу
+                float bottomY = ImGui.getWindowHeight() - 110;
+                if (ImGui.getCursorPosY() < bottomY) ImGui.setCursorPosY(bottomY);
+
+                ImGui.separator();
+                ImGui.text("Тема");
+                ImGui.setNextItemWidth(-1);
+                if (ImGui.combo("##theme", themeIdx, themes)) {
+                    // переключение темы - у нас одна ARZ тема, но можно хукать
                 }
-                if (ImGui.menuItem("Демо-окно ImGui", "", showDemo.get())) {
-                    showDemo.set(!showDemo.get());
+                ImGui.text("Стиль");
+                ImGui.setNextItemWidth(-1);
+                ImGui.combo("##style", styleIdx, styles);
+
+                ImGui.spacing();
+                if (ImGui.button("Сохранить", 85, 0)) {
+                    // TODO: save config
                 }
-                ImGui.endMenu();
+                ImGui.sameLine();
+                if (ImGui.button("Сброс", 85, 0)) {
+                    resetSettings();
+                }
             }
-            if (ImGui.beginMenu("Помощь")) {
-                ImGui.text("Помощник модерации для Minecraft 1.16.5");
-                ImGui.textWrapped("Каждый помощник открыт в отдельном окне.");
-                ImGui.endMenu();
+            ImGui.endChild();
+
+            ImGui.sameLine();
+
+            // === Правая панель - Контент ===
+            ImGui.beginChild("##content", 0, 0, true);
+            {
+                switch (activeTab) {
+                    case SETTINGS: drawSettingsTab(); break;
+                    case INFO: drawInfoTab(); break;
+                    case NOTIFY: drawPlaceholder("Уведомления", "Здесь будут настройки уведомлений / тг-бота и т.д."); break;
+                    case AUTOFILL: drawPlaceholder("Автозаполнение", "Шаблоны для ответов, бинды и т.п."); break;
+                    case AUTOEAT: drawPlaceholder("Автохавка", "Настройки авто-хила / еды"); break;
+                    case REPO: drawPlaceholder("Репозиторий", "https://github.com/...\nАвтообновление"); break;
+                    case FUN_PLAYER: drawPlaceholder("Игрок", "Fly, Speed, NoClip и т.д."); break;
+                    case FUN_VISUAL: drawPlaceholder("Визуалы", "ESP, Fullbright, Fisheye"); break;
+                    case FUN_COMBAT: drawPlaceholder("Бой", "KillAura, Reach"); break;
+                    case FUN_MISC: drawPlaceholder("Разное", "Прочие читы"); break;
+                }
             }
-            ImGui.endMainMenuBar();
-        }
-    }
-
-    private void drawBanAssistant(Minecraft mc, ImGuiIO io) {
-        ImGui.setNextWindowSize(360, 520, ImGuiCond.FirstUseEver);
-        ImGui.setNextWindowPos(20, 60, ImGuiCond.FirstUseEver);
-        if (ImGui.begin("Помощник банов", ImGuiWindowFlags.None)) {
-            ImGui.text("Бан");
-            ImGui.separator();
-
-            ImGui.text("1) Правило:");
-            renderSelectedRule(banState);
-            if (ImGui.button("Выбрать правило...")) {
-                ImGui.openPopup(POPUP_BAN_RULES);
-            }
-            drawBanRulesPopup();
-
-            ImGui.spacing();
-            ImGui.separator();
-            ImGui.spacing();
-
-            ImGui.text("2) Игрок:");
-            drawPlayerModeControls(banState, PlayerPopupContext.BAN, POPUP_BAN_PLAYERS);
-            drawBanPlayersPopup();
-
-            ImGui.spacing();
-            ImGui.separator();
-            ImGui.spacing();
-
-            ImGui.text("3) Бан:");
-            drawRuleActionButton(mc, banState, "Забанить игрока", true);
-            renderStatus(banState);
-
-            ImGui.spacing();
-            ImGui.separator();
+            ImGui.endChild();
         }
         ImGui.end();
     }
 
-    private void drawMuteAssistant(Minecraft mc, ImGuiIO io) {
-        ImGui.setNextWindowSize(360, 480, ImGuiCond.FirstUseEver);
-        ImGui.setNextWindowPos(400, 60, ImGuiCond.FirstUseEver);
-        if (ImGui.begin("Помощник мутов", ImGuiWindowFlags.None)) {
-            ImGui.text("Мут");
-            ImGui.separator();
-
-            ImGui.text("1) Правило:");
-            renderSelectedRule(muteState);
-            if (ImGui.button("Выбрать правило...")) {
-                ImGui.openPopup(POPUP_MUTE_RULES);
-            }
-            drawMuteRulesPopup();
-
-            ImGui.spacing();
-            ImGui.separator();
-            ImGui.spacing();
-
-            ImGui.text("2) Игрок:");
-            drawPlayerModeControls(muteState, PlayerPopupContext.MUTE, POPUP_MUTE_PLAYERS);
-            drawMutePlayersPopup();
-
-            ImGui.spacing();
-            ImGui.separator();
-            ImGui.spacing();
-
-            ImGui.text("3) Мут:");
-            drawRuleActionButton(mc, muteState, "Выдать мут", false);
-            renderStatus(muteState);
-
-            ImGui.spacing();
-            ImGui.separator();
-        }
-        ImGui.end();
+    private boolean selectableTab(Tab tab) {
+        boolean selected = activeTab == tab;
+        return ImGui.selectable(tab.label, selected);
     }
 
-    private void drawCheckAssistant(Minecraft mc, ImGuiIO io) {
-        ImGui.setNextWindowSize(360, 420, ImGuiCond.FirstUseEver);
-        ImGui.setNextWindowPos(780, 60, ImGuiCond.FirstUseEver);
-        if (ImGui.begin("Проверка игроков", ImGuiWindowFlags.None)) {
-            ImGui.text("Проверка");
-            ImGui.separator();
+    private void drawSettingsTab() {
+        ImGui.text("Основные");
+        ImGui.separator();
 
-            ImGui.text("Игрок для проверки:");
-            if (checkState.selectedPlayerName.isEmpty()) {
-                ImGui.textDisabled("  (игрок не выбран)");
-            } else {
-                ImGui.bulletText("Выбран: " + checkState.selectedPlayerName);
-            }
-            if (ImGui.button("Выбрать игрока...")) {
-                openPlayerPopup(PlayerPopupContext.CHECK);
-                ImGui.openPopup(POPUP_CHECK_PLAYERS);
-            }
-            drawCheckPlayersPopup();
+        // 3 колонки
+        ImGui.columns(3, "settings_cols", false);
+        // Колонка 1
+        {
+            checkboxRed("AntiBlockedPlayer", antiBlockedPlayer, "Блокирует отправку в деморган?");
+            ImGui.checkbox("ShieldControl", shieldControl);
+            checkboxWithHelp("Bunnyhop", bunnyhop, "Автоматический распрыг");
+            ImGui.checkbox("FastRun", fastRun);
+            ImGui.checkbox("AntiDebuff", antiDebuff);
+            ImGui.checkbox("AntiStun", antiStun);
+            ImGui.checkbox("AntiCrash", antiCrash);
+            ImGui.nextColumn();
+        }
+        // Колонка 2
+        {
+            if (ImGui.button("Пропуск ответа...", -1, 0)) {}
+            ImGui.checkbox("Fastconnect", fastConnect);
+            checkboxWithHelp("Сбив /anim", sbivAnim, "Сбивает анимацию");
+            ImGui.checkbox("AntiAFK", antiAFK);
+            ImGui.checkbox("AdminSpec", adminSpec);
 
             ImGui.spacing();
-            ImGui.separator();
-            ImGui.spacing();
+            // Красная кнопка "Прослушать"
+            ImGui.pushStyleColor(ImGuiCol.Button, 1.0f, 0.28f, 0.28f, 1.0f);
+            ImGui.pushStyleColor(ImGuiCol.ButtonHovered, 1.0f, 0.39f, 0.39f, 1.0f);
+            ImGui.pushStyleColor(ImGuiCol.ButtonActive, 1.0f, 0.21f, 0.21f, 1.0f);
+            if (ImGui.button("Прослушать", -1, 0)) {}
+            ImGui.popStyleColor(3);
 
-            boolean canStart = mc.player != null && !checkState.selectedPlayerName.isEmpty();
-            if (!canStart) {
-                pushDisabledButtonStyle();
-            }
-            if (ImGui.button("Начать", -1, 36)) {
-                if (canStart) {
-                    sendCommandAndStatus(
-                        "/asuxcheat start \"" + checkState.selectedPlayerName + "\"",
-                        checkState,
-                        "Команда отправлена: /asuxcheat start \"" + checkState.selectedPlayerName + "\""
-                    );
-                }
-            }
-            if (!canStart) {
-                popDisabledButtonStyle();
-                if (ImGui.isItemHovered()) {
-                    ImGui.setTooltip("Сначала выбери игрока для проверки.");
-                }
-            }
-
-            if (ImGui.button("Остановить (отпустить)", -1, 36)) {
-                sendCommandAndStatus("/asuxcheat stop", checkState, "Команда отправлена: /asuxcheat stop");
-            }
-
-            if (ImGui.button("Добавить время (2 минуты)", -1, 36)) {
-                sendCommandAndStatus("/asuxcheat addtime 120", checkState, "Команда отправлена: /asuxcheat addtime 120");
-            }
-
-            if (ImGui.button("Заморозить проверку", -1, 36)) {
-                sendCommandAndStatus("/asuxcheat freeze", checkState, "Команда отправлена: /asuxcheat freeze");
-            }
-
-            renderStatus(checkState);
+            ImGui.nextColumn();
         }
-        ImGui.end();
-    }
+        // Колонка 3
+        {
+            ImGui.checkbox("Телефон", phone);
+            ImGui.checkbox("Маска", mask);
+            ImGui.checkbox("Бронижилет", armor);
+            ImGui.checkbox("Fisheye", fisheye);
+            helpMarker("Рыбий глаз - широкий FOV");
+            ImGui.nextColumn();
+        }
+        ImGui.columns(1);
 
-    private void drawPlayerModeControls(ActionState state, PlayerPopupContext context, String popupName) {
-        if (ImGui.radioButton("Онлайн-игрок (из таб-листа)", !state.useOffline)) {
-            state.useOffline = false;
-        }
-        if (ImGui.radioButton("Оффлайн / ник вручную", state.useOffline)) {
-            state.useOffline = true;
-        }
+        ImGui.spacing(); ImGui.separator(); ImGui.spacing();
+
+        // Радиус слайдер
+        ImGui.text("Радиус");
+        ImGui.sameLine();
+        helpMarker("Радиус действия функций");
+        ImGui.setNextItemWidth(280);
+        ImGui.sliderFloat("##radius", radius.getData(), 1.0f, 50.0f, "%.0f");
+        ImGui.sameLine();
+        ImGui.textDisabled(String.format("%.0f", radius.get()));
+
+        ImGui.spacing(); ImGui.separator(); ImGui.spacing();
+
+        // Вил Чат
+        ImGui.text("Вил Чат");
+        ImGui.spacing();
+        ImGui.setNextItemWidth(-1);
+        ImGui.inputText("##vip1", vipChat1);
+        ImGui.setNextItemWidth(-1);
+        ImGui.inputText("##vip2", vipChat2);
+        ImGui.setNextItemWidth(-1);
+        ImGui.inputText("##vip3", vipChat3);
 
         ImGui.spacing();
-        if (!state.useOffline) {
-            if (state.selectedPlayerName.isEmpty()) {
-                ImGui.textDisabled("  (игрок не выбран)");
-            } else {
-                ImGui.bulletText("Выбран: " + state.selectedPlayerName);
-            }
-            if (ImGui.button("Выбрать игрока...")) {
-                openPlayerPopup(context);
-                ImGui.openPopup(popupName);
-            }
-        } else {
-            ImGui.text("Ник:");
-            ImGui.setNextItemWidth(-1);
-            ImGui.inputText("##" + popupName + "_offline", state.offlineNameBuf);
+        if (ImGui.button("Отправить в VIP чат", 180, 0)) {
+            sendVipChat();
         }
     }
 
-    private void renderSelectedRule(ActionState state) {
-        if (state.selectedRule == null) {
-            ImGui.textDisabled("  (правило не выбрано)");
-            return;
-        }
-
-        ImGui.bulletText(state.selectedRule.id + " — " + state.selectedRule.desc);
-        ImGui.bulletText("Длительность: " + (state.selectedRule.permanent ? "постоянно" : state.selectedRule.duration));
-    }
-
-    private void drawRuleActionButton(Minecraft mc, ActionState state, String buttonText, boolean isBan) {
-        String targetName = state.useOffline ? state.offlineNameBuf.get().trim() : state.selectedPlayerName;
-        boolean canRun = mc.player != null && state.selectedRule != null && !targetName.isEmpty();
-
-        if (!canRun) {
-            pushDisabledButtonStyle();
-        }
-
-        if (ImGui.button(buttonText, -1, 36)) {
-            if (canRun) {
-                String command = buildRuleCommand(state.selectedRule, targetName, isBan);
-                sendChatCommand(command);
-                setStatus(state, "Команда отправлена: " + command);
-            }
-        }
-
-        if (!canRun) {
-            popDisabledButtonStyle();
-            if (ImGui.isItemHovered()) {
-                ImGui.setTooltip("Сначала выбери правило и игрока.");
-            }
-        }
-
-        if (canRun) {
-            ImGui.spacing();
-            ImGui.textWrapped("Команда для выполнения:");
-            ImGui.textColored(0.9f, 0.9f, 0.9f, 1f, buildRuleCommand(state.selectedRule, targetName, isBan));
-        }
-    }
-
-    private String buildRuleCommand(Rule rule, String targetName, boolean isBan) {
-        if (rule == null) {
-            return "";
-        }
-
-        if (isBan) {
-            if (rule.permanent) {
-                return "/ban " + targetName + " " + rule.reason();
-            }
-            return "/tempban " + targetName + " " + rule.duration + " " + rule.reason();
-        }
-
-        if (rule.permanent) {
-            return "/mute " + targetName + " " + rule.reason();
-        }
-        return "/tempmute " + targetName + " " + rule.duration + " " + rule.reason();
-    }
-
-    private void sendCommandAndStatus(String command, CheckState state, String message) {
-        sendChatCommand(command);
-        setStatus(state, message);
-    }
-
-    private void sendChatCommand(String command) {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null) {
-            return;
-        }
-        mc.player.connection.send(new CChatMessagePacket(command));
-    }
-
-    private void openPlayerPopup(PlayerPopupContext context) {
-        playerPopupContext = context;
-    }
-
-    private void drawBanRulesPopup() {
-        ImGui.setNextWindowSize(520, 480, ImGuiCond.Appearing);
-        if (ImGui.beginPopupModal(POPUP_BAN_RULES)) {
-            ImGui.text("Выберите правило для бана:");
-            ImGui.separator();
-
-            if (ImGui.collapsingHeader("Основные правила", ImGuiSelectableFlags.DontClosePopups)) {
-                for (Rule rule : BAN_RULES) {
-                    String label = rule.id + " — " + rule.desc + (rule.permanent ? " (постоянно)" : " (" + rule.duration + ")");
-                    if (ImGui.selectable(label)) {
-                        banState.selectedRule = rule;
-                        ImGui.closeCurrentPopup();
-                    }
-                }
-            }
-
-            ImGui.spacing();
-            ImGui.separator();
-            if (ImGui.button("Отмена", -1, 0)) {
-                ImGui.closeCurrentPopup();
-            }
-            ImGui.endPopup();
-        }
-    }
-
-    private void drawMuteRulesPopup() {
-        ImGui.setNextWindowSize(520, 420, ImGuiCond.Appearing);
-        if (ImGui.beginPopupModal(POPUP_MUTE_RULES)) {
-            ImGui.text("Выберите правило для мута:");
-            ImGui.separator();
-
-            if (ImGui.collapsingHeader("Основные правила", ImGuiSelectableFlags.DontClosePopups)) {
-                for (Rule rule : MUTE_RULES) {
-                    String label = rule.id + " — " + rule.desc + " (" + rule.duration + ")";
-                    if (ImGui.selectable(label)) {
-                        muteState.selectedRule = rule;
-                        ImGui.closeCurrentPopup();
-                    }
-                }
-            }
-
-            ImGui.spacing();
-            ImGui.separator();
-            if (ImGui.button("Отмена", -1, 0)) {
-                ImGui.closeCurrentPopup();
-            }
-            ImGui.endPopup();
-        }
-    }
-
-    private void drawBanPlayersPopup() {
-        ImGui.setNextWindowSize(340, 400, ImGuiCond.Appearing);
-        if (ImGui.beginPopupModal(POPUP_BAN_PLAYERS)) {
-            ImGui.text("Онлайн-игроки:");
-            ImGui.separator();
-            drawOnlinePlayersList(name -> {
-                banState.selectedPlayerName = name;
-                banState.useOffline = false;
-            });
-            if (ImGui.button("Отмена", -1, 0)) {
-                ImGui.closeCurrentPopup();
-            }
-            ImGui.endPopup();
-        }
-    }
-
-    private void drawMutePlayersPopup() {
-        ImGui.setNextWindowSize(340, 400, ImGuiCond.Appearing);
-        if (ImGui.beginPopupModal(POPUP_MUTE_PLAYERS)) {
-            ImGui.text("Онлайн-игроки:");
-            ImGui.separator();
-            drawOnlinePlayersList(name -> {
-                muteState.selectedPlayerName = name;
-                muteState.useOffline = false;
-            });
-            if (ImGui.button("Отмена", -1, 0)) {
-                ImGui.closeCurrentPopup();
-            }
-            ImGui.endPopup();
-        }
-    }
-
-    private void drawCheckPlayersPopup() {
-        ImGui.setNextWindowSize(340, 400, ImGuiCond.Appearing);
-        if (ImGui.beginPopupModal(POPUP_CHECK_PLAYERS)) {
-            ImGui.text("Онлайн-игроки:");
-            ImGui.separator();
-            drawOnlinePlayersList(name -> checkState.selectedPlayerName = name);
-            if (ImGui.button("Отмена", -1, 0)) {
-                ImGui.closeCurrentPopup();
-            }
-            ImGui.endPopup();
-        }
-    }
-
-    private interface PlayerSelectHandler {
-        void accept(String name);
-    }
-
-    private void drawOnlinePlayersList(PlayerSelectHandler onSelect) {
-        Minecraft mc = Minecraft.getInstance();
-        List<NetworkPlayerInfo> players = new ArrayList<NetworkPlayerInfo>();
-
-        if (mc.getConnection() != null) {
-            Collection<NetworkPlayerInfo> online = mc.getConnection().getOnlinePlayers();
-            if (online != null) {
-                players.addAll(online);
-                players.sort(Comparator.comparing(p -> {
-                    GameProfile profile = p.getProfile();
-                    String name = profile != null ? profile.getName() : "";
-                    return name == null ? "" : name.toLowerCase();
-                }));
-            }
-        }
-
-        if (players.isEmpty()) {
-            ImGui.textDisabled("(онлайн-игроки не найдены или нет подключения)");
-            return;
-        }
-
-        ImGui.beginChild("playersList", 0, -40, true);
-        for (NetworkPlayerInfo info : players) {
-            GameProfile profile = info.getProfile();
-            if (profile == null) {
-                continue;
-            }
-
-            String name = profile.getName();
-            if (name == null || name.isEmpty()) {
-                continue;
-            }
-
-            if (ImGui.selectable(name)) {
-                onSelect.accept(name);
-                ImGui.closeCurrentPopup();
-            }
-        }
-        ImGui.endChild();
-    }
-
-    private void setStatus(ActionState state, String msg) {
-        state.statusMessage = msg;
-        state.statusTimer = 6f;
-    }
-
-    private void setStatus(CheckState state, String msg) {
-        state.statusMessage = msg;
-        state.statusTimer = 6f;
-    }
-
-    private void renderStatus(ActionState state) {
-        if (state.statusTimer > 0f && !state.statusMessage.isEmpty()) {
-            ImGui.spacing();
-            ImGui.separator();
-            ImGui.textWrapped(state.statusMessage);
-        }
-    }
-
-    private void renderStatus(CheckState state) {
-        if (state.statusTimer > 0f && !state.statusMessage.isEmpty()) {
-            ImGui.spacing();
-            ImGui.separator();
-            ImGui.textWrapped(state.statusMessage);
-        }
-    }
-
-    private void tickStatuses(float deltaTime) {
-        tickStatus(banState, deltaTime);
-        tickStatus(muteState, deltaTime);
-        tickStatus(checkState, deltaTime);
-    }
-
-    private void tickStatus(ActionState state, float deltaTime) {
-        if (state.statusTimer > 0f) {
-            state.statusTimer -= deltaTime;
-            if (state.statusTimer <= 0f) {
-                state.statusMessage = "";
-            }
-        }
-    }
-
-    private void tickStatus(CheckState state, float deltaTime) {
-        if (state.statusTimer > 0f) {
-            state.statusTimer -= deltaTime;
-            if (state.statusTimer <= 0f) {
-                state.statusMessage = "";
-            }
-        }
-    }
-
-    private void pushDisabledButtonStyle() {
-        ImGui.pushStyleColor(ImGuiCol.Button, colButton[0] * 0.6f, colButton[1] * 0.6f, colButton[2] * 0.6f, colButton[3]);
-        ImGui.pushStyleColor(ImGuiCol.ButtonHovered, colButton[0] * 0.6f, colButton[1] * 0.6f, colButton[2] * 0.6f, colButton[3]);
-        ImGui.pushStyleColor(ImGuiCol.ButtonActive, colButton[0] * 0.6f, colButton[1] * 0.6f, colButton[2] * 0.6f, colButton[3]);
-    }
-
-    private void popDisabledButtonStyle() {
-        ImGui.popStyleColor(3);
-    }
-
-    private void drawStyleEditor() {
-        ImGui.begin("Редактор цветов стиля", showStyleEditor, ImGuiWindowFlags.NoCollapse);
-        ImGui.text("Меняй цвета меню прямо на лету:");
+    private void drawInfoTab() {
+        ImGui.text("Информация");
         ImGui.separator();
-        ImGui.colorEdit4("WindowBg", colWindowBg);
-        ImGui.colorEdit4("TitleBg", colTitleBg);
-        ImGui.colorEdit4("TitleBgActive", colTitleBgActive);
-        ImGui.colorEdit4("TitleBgCollapsed", colTitleBgCollapsed);
-        ImGui.separator();
-        ImGui.colorEdit4("Text", colText);
-        ImGui.colorEdit4("TextDisabled", colTextDisabled);
-        ImGui.separator();
-        ImGui.colorEdit4("Tab", colTab);
-        ImGui.colorEdit4("TabHovered", colTabHovered);
-        ImGui.colorEdit4("TabActive", colTabActive);
-        ImGui.separator();
-        ImGui.colorEdit4("Button", colButton);
-        ImGui.colorEdit4("ButtonHovered", colButtonHovered);
-        ImGui.colorEdit4("ButtonActive", colButtonActive);
-        ImGui.separator();
-        ImGui.colorEdit4("CheckMark", colCheckMark);
-        ImGui.colorEdit4("FrameBg", colFrameBg);
-        ImGui.colorEdit4("FrameBgHovered", colFrameBgHovered);
-        ImGui.colorEdit4("FrameBgActive", colFrameBgActive);
-        ImGui.colorEdit4("Header", colHeader);
-        ImGui.colorEdit4("HeaderHovered", colHeaderHovered);
-        ImGui.colorEdit4("HeaderActive", colHeaderActive);
+        ImGui.textWrapped("ARZ Assistant - ImGui чит-меню для Minecraft 1.16.5 Forge");
+        ImGui.bulletText("Открытие меню: L");
+        ImGui.bulletText("ImGui-java: 1.86.10");
+        ImGui.bulletText("Рендер: LWJGL3 + GL3");
         ImGui.spacing();
-        ImGui.separator();
-        if (ImGui.button("Сбросить к черно-белой теме")) {
-            resetColorsToDefault();
-        }
-        ImGui.end();
+        ImGui.textDisabled("by Root3287 / edu.unl.csce466");
     }
 
-    private void applyCurrentColors() {
+    private void drawPlaceholder(String title, String desc) {
+        ImGui.text(title);
+        ImGui.separator();
+        ImGui.textDisabled(desc);
+    }
+
+    // ===== Helpers =====
+
+    private void checkboxRed(String label, ImBoolean v, String tooltip) {
+        ImGui.checkbox(label, v);
+        if (tooltip != null && ImGui.isItemHovered()) {
+            ImGui.setTooltip(tooltip);
+        }
+        // подпись красным справа, как в ARZ
+        ImGui.sameLine();
+        ImGui.textColored(1.0f, 0.28f, 0.28f, 1.0f, "★");
+        if (tooltip != null && ImGui.isItemHovered()) {
+            ImGui.setTooltip(tooltip);
+        }
+    }
+
+    private void checkboxWithHelp(String label, ImBoolean v, String help) {
+        ImGui.checkbox(label, v);
+        ImGui.sameLine();
+        helpMarker(help);
+    }
+
+    private void helpMarker(String desc) {
+        ImGui.textDisabled("(?)");
+        if (ImGui.isItemHovered()) {
+            ImGui.beginTooltip();
+            ImGui.pushTextWrapPos(ImGui.getFontSize() * 35.0f);
+            ImGui.textUnformatted(desc);
+            ImGui.popTextWrapPos();
+            ImGui.endTooltip();
+        }
+    }
+
+    private void sendVipChat() {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) return;
+        // Пример отправки, замени под свой сервер
+        // mc.player.sendMessage(new StringTextComponent("/vip " + vipChat1.get()), Util.NIL_UUID);
+    }
+
+    private void resetSettings() {
+        antiBlockedPlayer.set(false);
+        shieldControl.set(false);
+        bunnyhop.set(false);
+        fastRun.set(false);
+        antiDebuff.set(false);
+        antiStun.set(false);
+        antiCrash.set(false);
+        fastConnect.set(false);
+        sbivAnim.set(false);
+        antiAFK.set(false);
+        adminSpec.set(false);
+        phone.set(false);
+        mask.set(false);
+        armor.set(false);
+        fisheye.set(false);
+        radius.set(12.0f);
+    }
+
+    // ===== ARZ THEME - порт Lua -> Java =====
+    private void applyArzTheme() {
         ImGuiStyle style = ImGui.getStyle();
 
-        style.setColor(ImGuiCol.WindowBg, colWindowBg[0], colWindowBg[1], colWindowBg[2], colWindowBg[3]);
-        style.setColor(ImGuiCol.TitleBg, colTitleBg[0], colTitleBg[1], colTitleBg[2], colTitleBg[3]);
-        style.setColor(ImGuiCol.TitleBgActive, colTitleBgActive[0], colTitleBgActive[1], colTitleBgActive[2], colTitleBgActive[3]);
-        style.setColor(ImGuiCol.TitleBgCollapsed, colTitleBgCollapsed[0], colTitleBgCollapsed[1], colTitleBgCollapsed[2], colTitleBgCollapsed[3]);
-        style.setColor(ImGuiCol.Text, colText[0], colText[1], colText[2], colText[3]);
-        style.setColor(ImGuiCol.TextDisabled, colTextDisabled[0], colTextDisabled[1], colTextDisabled[2], colTextDisabled[3]);
-        style.setColor(ImGuiCol.Tab, colTab[0], colTab[1], colTab[2], colTab[3]);
-        style.setColor(ImGuiCol.TabHovered, colTabHovered[0], colTabHovered[1], colTabHovered[2], colTabHovered[3]);
-        style.setColor(ImGuiCol.TabActive, colTabActive[0], colTabActive[1], colTabActive[2], colTabActive[3]);
-        style.setColor(ImGuiCol.Button, colButton[0], colButton[1], colButton[2], colButton[3]);
-        style.setColor(ImGuiCol.ButtonHovered, colButtonHovered[0], colButtonHovered[1], colButtonHovered[2], colButtonHovered[3]);
-        style.setColor(ImGuiCol.ButtonActive, colButtonActive[0], colButtonActive[1], colButtonActive[2], colButtonActive[3]);
-        style.setColor(ImGuiCol.CheckMark, colCheckMark[0], colCheckMark[1], colCheckMark[2], colCheckMark[3]);
-        style.setColor(ImGuiCol.FrameBg, colFrameBg[0], colFrameBg[1], colFrameBg[2], colFrameBg[3]);
-        style.setColor(ImGuiCol.FrameBgHovered, colFrameBgHovered[0], colFrameBgHovered[1], colFrameBgHovered[2], colFrameBgHovered[3]);
-        style.setColor(ImGuiCol.FrameBgActive, colFrameBgActive[0], colFrameBgActive[1], colFrameBgActive[2], colFrameBgActive[3]);
-        style.setColor(ImGuiCol.Header, colHeader[0], colHeader[1], colHeader[2], colHeader[3]);
-        style.setColor(ImGuiCol.HeaderHovered, colHeaderHovered[0], colHeaderHovered[1], colHeaderHovered[2], colHeaderHovered[3]);
-        style.setColor(ImGuiCol.HeaderActive, colHeaderActive[0], colHeaderActive[1], colHeaderActive[2], colHeaderActive[3]);
+        style.setWindowPadding(8, 8);
+        style.setWindowRounding(6.0f);
+        style.setChildRounding(5.0f);
+        style.setFramePadding(5, 3);
+        style.setFrameRounding(3.0f);
+        style.setItemSpacing(5, 4);
+        style.setItemInnerSpacing(4, 4);
+        style.setIndentSpacing(21);
+        style.setScrollbarSize(10.0f);
+        style.setScrollbarRounding(13f);
+        style.setGrabMinSize(8f);
+        style.setGrabRounding(1f);
+        style.setWindowTitleAlign(0.5f, 0.5f);
+        // ButtonTextAlign в imgui-java нет прямого доступа, не критично
 
-        style.setWindowRounding(2.0f);
-        style.setFrameRounding(2.0f);
-        style.setTabRounding(2.0f);
-        style.setGrabRounding(2.0f);
-        style.setScrollbarRounding(2.0f);
-        style.setPopupRounding(2.0f);
-        style.setWindowPadding(10.0f, 10.0f);
-        style.setFramePadding(8.0f, 5.0f);
-        style.setItemSpacing(8.0f, 6.0f);
+        // colors
+        setCol(ImGuiCol.Text, 0.95f, 0.96f, 0.98f, 1.00f);
+        setCol(ImGuiCol.TextDisabled, 0.29f, 0.29f, 0.29f, 1.00f);
+        setCol(ImGuiCol.WindowBg, 0.14f, 0.14f, 0.14f, 1.00f);
+        setCol(ImGuiCol.ChildBg, 0.12f, 0.12f, 0.12f, 1.00f);
+        setCol(ImGuiCol.PopupBg, 0.08f, 0.08f, 0.08f, 0.94f);
+        setCol(ImGuiCol.Border, 0.14f, 0.14f, 0.14f, 1.00f);
+        setCol(ImGuiCol.BorderShadow, 1.00f, 1.00f, 1.00f, 0.10f);
+        setCol(ImGuiCol.FrameBg, 0.22f, 0.22f, 0.22f, 1.00f);
+        setCol(ImGuiCol.FrameBgHovered, 0.18f, 0.18f, 0.18f, 1.00f);
+        setCol(ImGuiCol.FrameBgActive, 0.09f, 0.12f, 0.14f, 1.00f);
+        setCol(ImGuiCol.TitleBg, 0.14f, 0.14f, 0.14f, 0.81f);
+        setCol(ImGuiCol.TitleBgActive, 0.14f, 0.14f, 0.14f, 1.00f);
+        setCol(ImGuiCol.TitleBgCollapsed, 0.00f, 0.00f, 0.00f, 0.51f);
+        setCol(ImGuiCol.MenuBarBg, 0.20f, 0.20f, 0.20f, 1.00f);
+        setCol(ImGuiCol.ScrollbarBg, 0.02f, 0.02f, 0.02f, 0.39f);
+        setCol(ImGuiCol.ScrollbarGrab, 0.36f, 0.36f, 0.36f, 1.00f);
+        setCol(ImGuiCol.ScrollbarGrabHovered, 0.18f, 0.22f, 0.25f, 1.00f);
+        setCol(ImGuiCol.ScrollbarGrabActive, 0.24f, 0.24f, 0.24f, 1.00f);
+        setCol(ImGuiCol.CheckMark, 1.00f, 0.28f, 0.28f, 1.00f);
+        setCol(ImGuiCol.SliderGrab, 1.00f, 0.28f, 0.28f, 1.00f);
+        setCol(ImGuiCol.SliderGrabActive, 1.00f, 0.28f, 0.28f, 1.00f);
+        setCol(ImGuiCol.Button, 1.00f, 0.28f, 0.28f, 1.00f);
+        setCol(ImGuiCol.ButtonHovered, 1.00f, 0.39f, 0.39f, 1.00f);
+        setCol(ImGuiCol.ButtonActive, 1.00f, 0.21f, 0.21f, 1.00f);
+        setCol(ImGuiCol.Header, 1.00f, 0.28f, 0.28f, 1.00f);
+        setCol(ImGuiCol.HeaderHovered, 1.00f, 0.39f, 0.39f, 1.00f);
+        setCol(ImGuiCol.HeaderActive, 1.00f, 0.21f, 0.21f, 1.00f);
+        setCol(ImGuiCol.Separator, 0.14f, 0.14f, 0.14f, 1.0f);
+        setCol(ImGuiCol.SeparatorHovered, 0.40f, 0.40f, 0.40f, 1.0f);
+        setCol(ImGuiCol.SeparatorActive, 1.00f, 0.28f, 0.28f, 1.0f);
+        setCol(ImGuiCol.ResizeGrip, 1.00f, 0.28f, 0.28f, 1.00f);
+        setCol(ImGuiCol.ResizeGripHovered, 1.00f, 0.39f, 0.39f, 1.00f);
+        setCol(ImGuiCol.ResizeGripActive, 1.00f, 0.19f, 0.19f, 1.00f);
+        setCol(ImGuiCol.Tab, 0.22f, 0.22f, 0.22f, 1.0f);
+        setCol(ImGuiCol.TabHovered, 1.00f, 0.28f, 0.28f, 1.0f);
+        setCol(ImGuiCol.TabActive, 1.00f, 0.28f, 0.28f, 1.0f);
+        setCol(ImGuiCol.PlotLines, 0.61f, 0.61f, 0.61f, 1.00f);
+        setCol(ImGuiCol.PlotLinesHovered, 1.00f, 0.43f, 0.35f, 1.00f);
+        setCol(ImGuiCol.PlotHistogram, 1.00f, 0.21f, 0.21f, 1.00f);
+        setCol(ImGuiCol.PlotHistogramHovered, 1.00f, 0.18f, 0.18f, 1.00f);
+        setCol(ImGuiCol.TextSelectedBg, 1.00f, 0.32f, 0.32f, 1.00f);
+        setCol(ImGuiCol.ModalWindowDimBg, 0.26f, 0.26f, 0.26f, 0.60f);
+        // доп
+        setCol(ImGuiCol.NavHighlight, 1.00f, 0.28f, 0.28f, 1.0f);
     }
 
-    private void resetColorsToDefault() {
-        colWindowBg[0] = 14 / 255f; colWindowBg[1] = 14 / 255f; colWindowBg[2] = 16 / 255f; colWindowBg[3] = 236 / 255f;
-        colTitleBg[0] = 28 / 255f; colTitleBg[1] = 28 / 255f; colTitleBg[2] = 30 / 255f; colTitleBg[3] = 245 / 255f;
-        colTitleBgActive[0] = 44 / 255f; colTitleBgActive[1] = 44 / 255f; colTitleBgActive[2] = 46 / 255f; colTitleBgActive[3] = 245 / 255f;
-        colTitleBgCollapsed[0] = 24 / 255f; colTitleBgCollapsed[1] = 24 / 255f; colTitleBgCollapsed[2] = 26 / 255f; colTitleBgCollapsed[3] = 210 / 255f;
-        colText[0] = 1f; colText[1] = 1f; colText[2] = 1f; colText[3] = 1f;
-        colTextDisabled[0] = 160 / 255f; colTextDisabled[1] = 160 / 255f; colTextDisabled[2] = 160 / 255f; colTextDisabled[3] = 140 / 255f;
-        colTab[0] = 36 / 255f; colTab[1] = 36 / 255f; colTab[2] = 38 / 255f; colTab[3] = 180 / 255f;
-        colTabHovered[0] = 60 / 255f; colTabHovered[1] = 60 / 255f; colTabHovered[2] = 62 / 255f; colTabHovered[3] = 210 / 255f;
-        colTabActive[0] = 78 / 255f; colTabActive[1] = 78 / 255f; colTabActive[2] = 80 / 255f; colTabActive[3] = 235 / 255f;
-        colButton[0] = 54 / 255f; colButton[1] = 54 / 255f; colButton[2] = 56 / 255f; colButton[3] = 230 / 255f;
-        colButtonHovered[0] = 82 / 255f; colButtonHovered[1] = 82 / 255f; colButtonHovered[2] = 84 / 255f; colButtonHovered[3] = 240 / 255f;
-        colButtonActive[0] = 118 / 255f; colButtonActive[1] = 118 / 255f; colButtonActive[2] = 120 / 255f; colButtonActive[3] = 245 / 255f;
-        colCheckMark[0] = 1f; colCheckMark[1] = 1f; colCheckMark[2] = 1f; colCheckMark[3] = 1f;
-        colFrameBg[0] = 34 / 255f; colFrameBg[1] = 34 / 255f; colFrameBg[2] = 36 / 255f; colFrameBg[3] = 225 / 255f;
-        colFrameBgHovered[0] = 48 / 255f; colFrameBgHovered[1] = 48 / 255f; colFrameBgHovered[2] = 50 / 255f; colFrameBgHovered[3] = 236 / 255f;
-        colFrameBgActive[0] = 70 / 255f; colFrameBgActive[1] = 70 / 255f; colFrameBgActive[2] = 72 / 255f; colFrameBgActive[3] = 242 / 255f;
-        colHeader[0] = 40 / 255f; colHeader[1] = 40 / 255f; colHeader[2] = 42 / 255f; colHeader[3] = 225 / 255f;
-        colHeaderHovered[0] = 60 / 255f; colHeaderHovered[1] = 60 / 255f; colHeaderHovered[2] = 62 / 255f; colHeaderHovered[3] = 235 / 255f;
-        colHeaderActive[0] = 88 / 255f; colHeaderActive[1] = 88 / 255f; colHeaderActive[2] = 90 / 255f; colHeaderActive[3] = 240 / 255f;
+    private static void setCol(int col, float r, float g, float b, float a) {
+        ImGui.getStyle().setColor(col, r, g, b, a);
     }
 }
