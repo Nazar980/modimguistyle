@@ -7,14 +7,14 @@ import net.minecraft.item.Items;
 import net.minecraft.scoreboard.Score;
 import net.minecraft.scoreboard.ScoreObjective;
 import net.minecraft.scoreboard.Scoreboard;
-import net.minecraft.scoreboard.Team;
+import net.minecraft.util.StringUtil;
 import net.minecraft.util.Util;
 import net.minecraft.util.text.StringTextComponent;
-import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -64,7 +64,6 @@ public class DupeLogger {
             current.merge(stack.getItem(), stack.getCount(), Integer::sum);
         }
 
-        // сравниваем с lastInventory
         // новые / увеличившиеся
         for (Map.Entry<Item, Integer> e : current.entrySet()) {
             Item item = e.getKey();
@@ -104,22 +103,21 @@ public class DupeLogger {
         // ---- 2. Монеты из скорборда ----
         try {
             Scoreboard scoreboard = mc.level.getScoreboard();
-            ScoreObjective objective = scoreboard.getObjectiveInDisplaySlot(1); // SIDEBAR
+            // 1.16.5 official: getDisplayObjective(int slot)
+            ScoreObjective objective = scoreboard.getDisplayObjective(1); // 1 = SIDEBAR
             if (objective != null) {
-                for (Score score : scoreboard.getSortedScores(objective)) {
+                Collection<Score> scores = scoreboard.getPlayerScores(objective);
+                for (Score score : scores) {
                     String owner = score.getOwner();
                     if (owner == null || owner.startsWith("#")) continue;
 
-                    Team team = scoreboard.getPlayersTeam(owner);
-                    String text = owner;
-                    if (team != null) {
-                        text = Team.formatNameForTeam(team, new StringTextComponent(owner)).getString();
-                    }
-                    String clean = TextFormatting.stripFormatting(text);
-                    if (clean == null) continue;
+                    // Убираем цветовые коды §x
+                    String clean = StringUtil.stripColor(owner);
+                    if (clean == null) clean = owner;
 
-                    // ищем "Монет"
-                    if (clean.toLowerCase().contains("монет")) {
+                    // ищем "монет"
+                    String lower = clean.toLowerCase();
+                    if (lower.contains("монет") || lower.contains("coin") || lower.contains("$") || lower.contains("руб")) {
                         Matcher m = COIN_NUMBER.matcher(clean);
                         String lastNum = null;
                         while (m.find()) {
@@ -146,13 +144,13 @@ public class DupeLogger {
                                         if (delay >= 200 && delay <= 600) {
                                             msg += " §a§lDUP WINDOW!";
                                         }
-                                        lastEmeraldGainMs = 0; // сбросили, чтобы не спамить
+                                        lastEmeraldGainMs = 0;
                                     }
 
                                     logToChat(msg);
                                 }
                                 lastCoins = coins;
-                                break; // нашли монеты, выходим
+                                break;
                             }
                         }
                     }
