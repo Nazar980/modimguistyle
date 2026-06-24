@@ -1,19 +1,17 @@
 package edu.unl.csce466.screens;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
-import edu.unl.csce466.cheat.CheatManager;
+import edu.unl.csce466.cheat.HitboxManager;
 import edu.unl.csce466.imgui.ImGuiRenderer;
+import imgui.ImDrawList;
 import imgui.ImGui;
-import imgui.ImGuiIO;
 import imgui.ImGuiStyle;
 import imgui.flag.ImGuiCol;
 import imgui.flag.ImGuiCond;
 import imgui.flag.ImGuiWindowFlags;
 import imgui.type.ImBoolean;
-import imgui.type.ImFloat;
-import imgui.type.ImInt;
-import imgui.type.ImString;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screen.inventory.InventoryScreen;
 import net.minecraft.util.text.StringTextComponent;
 
 public class ImGuiScreen extends net.minecraft.client.gui.screen.Screen {
@@ -30,244 +28,199 @@ public class ImGuiScreen extends net.minecraft.client.gui.screen.Screen {
 
     @Override public boolean isPauseScreen() { return false; }
 
-    // ===== State =====
-    private enum Tab {
-        SETTINGS("Настройки"),
-        INFO("Информация"),
-        NOTIFY("Уведомления"),
-        AUTOFILL("Автозаполнение"),
-        AUTOEAT("Автохавка"),
-        REPO("Репозиторий"),
-        // Функции
-        FUN_PLAYER("Игрок"),
-        FUN_VISUAL("Визуалы"),
-        FUN_COMBAT("Бой"),
-        FUN_MISC("Разное");
+    // ===== Hitbox state (зеркалим в HitboxManager) =====
+    private final ImBoolean hbEnabled = new ImBoolean(HitboxManager.enabled);
+    private final ImBoolean hbThroughWalls = new ImBoolean(HitboxManager.throughWalls);
 
-        final String label;
-        Tab(String label){ this.label = label; }
-    }
-    private Tab activeTab = Tab.SETTINGS;
+    // Preview
+    private float previewX = 0, previewY = 0;
+    private float previewW = 280, previewH = 320;
+    private float previewYaw = 25f;
 
-    // Настройки - колонка 1
-    private final ImBoolean antiBlockedPlayer = new ImBoolean(CheatManager.flyEnabled);
-    private final ImBoolean shieldControl = new ImBoolean(false);
-    private final ImBoolean bunnyhop = new ImBoolean(false);
-    private final ImBoolean fastRun = new ImBoolean(false);
-    private final ImBoolean antiDebuff = new ImBoolean(false);
-    private final ImBoolean antiStun = new ImBoolean(false);
-    private final ImBoolean antiCrash = new ImBoolean(false);
-
-    // колонка 2
-    private final ImBoolean fastConnect = new ImBoolean(false);
-    private final ImBoolean sbivAnim = new ImBoolean(false);
-    private final ImBoolean antiAFK = new ImBoolean(false);
-    private final ImBoolean adminSpec = new ImBoolean(false);
-
-    // колонка 3
-    private final ImBoolean phone = new ImBoolean(false);
-    private final ImBoolean mask = new ImBoolean(false);
-    private final ImBoolean armor = new ImBoolean(false);
-    private final ImBoolean fisheye = new ImBoolean(false);
-
-    // Специальные виджеты
-    private final ImFloat radius = new ImFloat(12.0f);
-    private final ImString vipChat1 = new ImString(128);
-    private final ImString vipChat2 = new ImString(128);
-    private final ImString vipChat3 = new ImString(128);
-
-    // Сайдбар низ
-    private final String[] themes = { "Тёмная", "Светлая", "ARZ Red", "Aqua" };
-    private final String[] styles = { "Компактный", "Стандарт", "Большой" };
-    private final ImInt themeIdx = new ImInt(2);
-    private final ImInt styleIdx = new ImInt(1);
-
-    // ===== Render =====
     @Override
     public void render(MatrixStack poseStack, int mouseX, int mouseY, float partialTick) {
+        Minecraft mc = Minecraft.getInstance();
+
+        // --- 1. Рендерим 3D превью игрока ПОД ImGui, чтобы оно просвечивало через прозрачный Child ---
+        if (previewX != 0 && mc.player != null && mc.level != null) {
+            float px = previewX + previewW * 0.5f;
+            float py = previewY + previewH * 0.78f;
+            int scale = 90;
+
+            // Включаем рендер хитбоксов (F3+B эффект)
+            mc.getEntityRenderDispatcher().setRenderHitBoxes(true);
+            // InventoryScreen.renderEntityInInventory сам пушит матрицы
+            InventoryScreen.renderEntityInInventory((int)px, (int)py, scale, -previewYaw, 0f, mc.player);
+            mc.getEntityRenderDispatcher().setRenderHitBoxes(false);
+        }
+
+        // --- 2. ImGui кадр ---
         ImGuiRenderer renderer = ImGuiRenderer.getInstance();
         renderer.draw(() -> {
             applyArzTheme();
             drawMainWindow();
         });
+
+        // Синхронизируем стейт в HitboxManager
+        HitboxManager.enabled = hbEnabled.get();
+        HitboxManager.throughWalls = hbThroughWalls.get();
     }
 
     private void drawMainWindow() {
-        ImGui.setNextWindowSize(920, 540, ImGuiCond.FirstUseEver);
+        ImGui.setNextWindowSize(860, 520, ImGuiCond.FirstUseEver);
         ImGui.setNextWindowPos(ImGui.getIO().getDisplaySizeX() * 0.5f, ImGui.getIO().getDisplaySizeY() * 0.5f, ImGuiCond.FirstUseEver, 0.5f, 0.5f);
 
         int windowFlags = ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse;
-        if (ImGui.begin("ARZ Assistant  |  by Root3287", windowFlags)) {
+        if (ImGui.begin("ARZ Assistant  |  Hitboxes", windowFlags)) {
 
-            // === Левая панель - Сайдбар ===
+            // === Левая панель ===
             ImGui.beginChild("##sidebar", 190, 0, true);
             {
-                textCentered("Меню");
+                textCentered("Hitboxes");
                 ImGui.separator();
 
-                if (selectableTab(Tab.SETTINGS)) activeTab = Tab.SETTINGS;
-                if (selectableTab(Tab.INFO)) activeTab = Tab.INFO;
-                if (selectableTab(Tab.NOTIFY)) activeTab = Tab.NOTIFY;
-                if (selectableTab(Tab.AUTOFILL)) activeTab = Tab.AUTOFILL;
-                if (selectableTab(Tab.AUTOEAT)) activeTab = Tab.AUTOEAT;
-                if (selectableTab(Tab.REPO)) activeTab = Tab.REPO;
+                // Только один пункт
+                ImGui.selectable("Hitboxes", true);
 
-                ImGui.spacing(); ImGui.separator(); ImGui.spacing();
-                textCenteredDisabled("Функции");
-                if (selectableTab(Tab.FUN_PLAYER)) activeTab = Tab.FUN_PLAYER;
-                if (selectableTab(Tab.FUN_VISUAL)) activeTab = Tab.FUN_VISUAL;
-                if (selectableTab(Tab.FUN_COMBAT)) activeTab = Tab.FUN_COMBAT;
-                if (selectableTab(Tab.FUN_MISC)) activeTab = Tab.FUN_MISC;
-
-                // низ сайдбара - прижать к низу
-                float bottomY = ImGui.getWindowHeight() - 110;
+                // низ
+                float bottomY = ImGui.getWindowHeight() - 72;
                 if (ImGui.getCursorPosY() < bottomY) ImGui.setCursorPosY(bottomY);
 
                 ImGui.separator();
-                textCentered("Настройки меню");
-                ImGui.text("Тема");
-                ImGui.setNextItemWidth(-1);
-                if (ImGui.combo("##theme", themeIdx, themes)) {
-                    // переключение темы
+                if (ImGui.button("Сохранить", 172, 26)) {
+                    HitboxManager.save();
                 }
-                ImGui.text("Стиль");
-                ImGui.setNextItemWidth(-1);
-                ImGui.combo("##style", styleIdx, styles);
-
-                ImGui.spacing();
-                if (ImGui.button("Сохранить", 85, 0)) {
-                    // TODO: save config
-                }
-                ImGui.sameLine();
-                if (ImGui.button("Сброс", 85, 0)) {
-                    resetSettings();
+                if (ImGui.button("Сброс", 172, 26)) {
+                    HitboxManager.reset();
+                    hbEnabled.set(HitboxManager.enabled);
+                    hbThroughWalls.set(HitboxManager.throughWalls);
                 }
             }
             ImGui.endChild();
 
             ImGui.sameLine();
 
-            // === Правая панель - Контент ===
+            // === Правая панель ===
             ImGui.beginChild("##content", 0, 0, true);
             {
-                switch (activeTab) {
-                    case SETTINGS: drawSettingsTab(); break;
-                    case INFO: drawInfoTab(); break;
-                    case NOTIFY: drawPlaceholder("Уведомления", "Здесь будут настройки уведомлений / тг-бота и т.д."); break;
-                    case AUTOFILL: drawPlaceholder("Автозаполнение", "Шаблоны для ответов, бинды и т.п."); break;
-                    case AUTOEAT: drawPlaceholder("Автохавка", "Настройки авто-хила / еды"); break;
-                    case REPO: drawPlaceholder("Репозиторий", "https://github.com/...\nАвтообновление"); break;
-                    case FUN_PLAYER: drawPlaceholder("Игрок", "Fly, Speed, NoClip и т.д."); break;
-                    case FUN_VISUAL: drawPlaceholder("Визуалы", "ESP, Fullbright, Fisheye"); break;
-                    case FUN_COMBAT: drawPlaceholder("Бой", "KillAura, Reach"); break;
-                    case FUN_MISC: drawPlaceholder("Разное", "Прочие читы"); break;
-                }
+                drawHitboxesTab();
             }
             ImGui.endChild();
         }
         ImGui.end();
     }
 
-    private boolean selectableTab(Tab tab) {
-        boolean selected = activeTab == tab;
-        return ImGui.selectable(tab.label, selected);
-    }
-
-    private void drawSettingsTab() {
-        textCentered("Основные");
+    private void drawHitboxesTab() {
+        textCentered("Hitboxes");
         ImGui.separator();
+        ImGui.spacing();
 
-        // 3 колонки
-        ImGui.columns(3, "settings_cols", false);
-        // Колонка 1
+        ImGui.columns(2, "hb_cols", false);
+        ImGui.setColumnWidth(0, 330);
+
+        // ---- Левая колонка: контролы ----
         {
-            checkboxRed("AntiBlockedPlayer", antiBlockedPlayer, "Блокирует отправку в деморган?");
-            ImGui.checkbox("ShieldControl", shieldControl);
-            checkboxWithHelp("Bunnyhop", bunnyhop, "Автоматический распрыг");
-            ImGui.checkbox("FastRun", fastRun);
-            ImGui.checkbox("AntiDebuff", antiDebuff);
-            ImGui.checkbox("AntiStun", antiStun);
-            ImGui.checkbox("AntiCrash", antiCrash);
-            ImGui.nextColumn();
-        }
-        // Колонка 2
-        {
-            if (ImGui.button("Пропуск ответа...", -1, 0)) {}
-            ImGui.checkbox("Fastconnect", fastConnect);
-            checkboxWithHelp("Сбив /anim", sbivAnim, "Сбивает анимацию");
-            ImGui.checkbox("AntiAFK", antiAFK);
-            ImGui.checkbox("AdminSpec", adminSpec);
+            ImGui.checkbox("Включить Hitboxes", hbEnabled);
+            ImGui.checkbox("Видно через стены", hbThroughWalls);
+
+            ImGui.spacing(); ImGui.separator(); ImGui.spacing();
+
+            ImGui.text("Ширина");
+            ImGui.setNextItemWidth(-1);
+            float[] w = { HitboxManager.width };
+            if (ImGui.sliderFloat("##hb_width", w, 0.1f, 3.0f, "%.2f")) {
+                HitboxManager.width = w[0];
+            }
+            ImGui.textDisabled(String.format("Текущая: %.2f  (ваниль 0.60)", HitboxManager.width));
 
             ImGui.spacing();
-            // Красная кнопка "Прослушать"
-            ImGui.pushStyleColor(ImGuiCol.Button, 1.0f, 0.28f, 0.28f, 1.0f);
-            ImGui.pushStyleColor(ImGuiCol.ButtonHovered, 1.0f, 0.39f, 0.39f, 1.0f);
-            ImGui.pushStyleColor(ImGuiCol.ButtonActive, 1.0f, 0.21f, 0.21f, 1.0f);
-            if (ImGui.button("Прослушать", -1, 0)) {}
-            ImGui.popStyleColor(3);
+            ImGui.text("Высота");
+            ImGui.setNextItemWidth(-1);
+            float[] h = { HitboxManager.height };
+            if (ImGui.sliderFloat("##hb_height", h, 0.1f, 3.5f, "%.2f")) {
+                HitboxManager.height = h[0];
+            }
+            ImGui.textDisabled(String.format("Текущая: %.2f  (ваниль 1.80)", HitboxManager.height));
+
+            ImGui.spacing(); ImGui.separator(); ImGui.spacing();
+
+            ImGui.text("Цвет хитбокса");
+            ImGui.setNextItemWidth(-1);
+            ImGui.colorEdit4("##hb_color", HitboxManager.color);
+
+            ImGui.spacing();
+            if (ImGui.button("Сбросить размер", -1, 0)) {
+                HitboxManager.width = 0.6f;
+                HitboxManager.height = 1.8f;
+            }
+
+            ImGui.spacing(); ImGui.separator(); ImGui.spacing();
+            ImGui.textWrapped("Хитбоксы применяются ко всем LivingEntity в мире. Работает для PvP / ботов.");
+            ImGui.textDisabled("F3+B в игре тоже покажет хитбоксы.");
 
             ImGui.nextColumn();
         }
-        // Колонка 3
+
+        // ---- Правая колонка: 3D превью ----
         {
-            ImGui.checkbox("Телефон", phone);
-            ImGui.checkbox("Маска", mask);
-            ImGui.checkbox("Бронижилет", armor);
-            ImGui.checkbox("Fisheye", fisheye);
-            helpMarker("Рыбий глаз - широкий FOV");
-            ImGui.nextColumn();
+            ImGui.text("Предпросмотр");
+            ImGui.spacing();
+
+            // Делаем Child с прозрачным фоном, чтобы было видно Minecraft entity рендер под ImGui
+            ImGui.pushStyleColor(ImGuiCol.ChildBg, 0, 0, 0, 0);
+            ImGui.beginChild("##preview_box", previewW, previewH, true, ImGuiWindowFlags.NoScrollbar);
+            {
+                // Невидимая зона для захвата мыши
+                ImGui.invisibleButton("##preview_drag", previewW - 16, previewH - 16);
+                boolean hovered = ImGui.isItemHovered();
+                if (hovered && ImGui.isMouseDown(0)) {
+                    previewYaw += ImGui.getIO().getMouseDeltaX() * 0.6f;
+                }
+
+                // Запоминаем экранные координаты этого Child для рендера entity в Screen.render()
+                float[] pos = new float[2];
+                ImGui.getItemRectMin(pos);
+                previewX = pos[0];
+                previewY = pos[1];
+                previewW = ImGui.getItemRectSizeX();
+                previewH = ImGui.getItemRectSizeY();
+
+                // Подложка / сетка
+                ImDrawList dl = ImGui.getWindowDrawList();
+                float x0 = previewX, y0 = previewY, x1 = x0 + previewW, y1 = y0 + previewH;
+                dl.addRectFilled(x0, y0, x1, y1, ImGui.getColorU32(0.10f, 0.10f, 0.10f, 0.55f), 6f);
+                dl.addRect(x0, y0, x1, y1, ImGui.getColorU32(0.42f, 0.42f, 0.42f, 1f), 6f);
+
+                // Подпись
+                String hint = hovered ? "Тяни мышью для поворота" : "3D превью игрока";
+                float tw = ImGui.calcTextSize(hint).x;
+                dl.addText(x0 + (previewW - tw) * 0.5f, y0 + 8, ImGui.getColorU32(1f,1f,1f,0.7f), hint);
+
+                // Визуальный 2D бокс хитбокса поверх (в дополнение к реальному 3D хитбоксу от MC)
+                float boxW = 70f * (HitboxManager.width / 0.6f);
+                float boxH = 190f * (HitboxManager.height / 1.8f);
+                boxW = Math.max(20, Math.min(boxW, previewW - 20));
+                boxH = Math.max(30, Math.min(boxH, previewH - 60));
+                float bx0 = x0 + (previewW - boxW) * 0.5f;
+                float by1 = y0 + previewH - 28;
+                float by0 = by1 - boxH;
+                int col = ImGui.getColorU32(HitboxManager.color[0], HitboxManager.color[1], HitboxManager.color[2], HitboxManager.color[3]);
+                dl.addRect(bx0, by0, bx0 + boxW, by1, col, 0f, 0, 2f);
+
+                String sizeTxt = String.format("%.2f x %.2f", HitboxManager.width, HitboxManager.height);
+                float stw = ImGui.calcTextSize(sizeTxt).x;
+                dl.addText(bx0 + (boxW - stw) * 0.5f, by0 - 18, col, sizeTxt);
+            }
+            ImGui.endChild();
+            ImGui.popStyleColor();
+
+            ImGui.textDisabled("Крути модель ЛКМ");
         }
+
         ImGui.columns(1);
-
-        ImGui.spacing(); ImGui.separator(); ImGui.spacing();
-
-        // Радиус слайдер
-        textCentered("Радиус действия");
-        ImGui.spacing();
-        ImGui.setNextItemWidth(-80);
-        ImGui.sliderFloat("##radius", radius.getData(), 1.0f, 50.0f, "%.0f");
-        ImGui.sameLine();
-        ImGui.textDisabled(String.format("%.0f м", radius.get()));
-        ImGui.sameLine();
-        helpMarker("Радиус действия функций");
-
-        ImGui.spacing(); ImGui.separator(); ImGui.spacing();
-
-        // Вил Чат
-        textCentered("Вил Чат");
-        ImGui.spacing();
-        ImGui.setNextItemWidth(-1);
-        ImGui.inputText("##vip1", vipChat1);
-        ImGui.setNextItemWidth(-1);
-        ImGui.inputText("##vip2", vipChat2);
-        ImGui.setNextItemWidth(-1);
-        ImGui.inputText("##vip3", vipChat3);
-
-        ImGui.spacing();
-        if (ImGui.button("Отправить в VIP чат", 180, 0)) {
-            sendVipChat();
-        }
-    }
-
-    private void drawInfoTab() {
-        textCentered("Информация");
-        ImGui.separator();
-        ImGui.textWrapped("ARZ Assistant - ImGui чит-меню для Minecraft 1.16.5 Forge");
-        ImGui.bulletText("Открытие меню: L");
-        ImGui.bulletText("ImGui-java: 1.86.10");
-        ImGui.bulletText("Рендер: LWJGL3 + GL3");
-        ImGui.spacing();
-        ImGui.textDisabled("by Root3287 / edu.unl.csce466");
-    }
-
-    private void drawPlaceholder(String title, String desc) {
-        textCentered(title);
-        ImGui.separator();
-        ImGui.textDisabled(desc);
     }
 
     // ===== Helpers =====
-
     private void textCentered(String text) {
         float windowWidth = ImGui.getWindowContentRegionMaxX() - ImGui.getWindowContentRegionMinX();
         float textWidth = ImGui.calcTextSize(text).x;
@@ -275,70 +228,7 @@ public class ImGuiScreen extends net.minecraft.client.gui.screen.Screen {
         ImGui.text(text);
     }
 
-    private void textCenteredDisabled(String text) {
-        float windowWidth = ImGui.getWindowContentRegionMaxX() - ImGui.getWindowContentRegionMinX();
-        float textWidth = ImGui.calcTextSize(text).x;
-        ImGui.setCursorPosX(ImGui.getCursorPosX() + (windowWidth - textWidth) * 0.5f);
-        ImGui.textDisabled(text);
-    }
-
-    private void checkboxRed(String label, ImBoolean v, String tooltip) {
-        ImGui.checkbox(label, v);
-        if (tooltip != null && ImGui.isItemHovered()) {
-            ImGui.setTooltip(tooltip);
-        }
-        // подпись красным справа, как в ARZ
-        ImGui.sameLine();
-        ImGui.textColored(1.0f, 0.28f, 0.28f, 1.0f, "★");
-        if (tooltip != null && ImGui.isItemHovered()) {
-            ImGui.setTooltip(tooltip);
-        }
-    }
-
-    private void checkboxWithHelp(String label, ImBoolean v, String help) {
-        ImGui.checkbox(label, v);
-        ImGui.sameLine();
-        helpMarker(help);
-    }
-
-    private void helpMarker(String desc) {
-        ImGui.textDisabled("(?)");
-        if (ImGui.isItemHovered()) {
-            ImGui.beginTooltip();
-            ImGui.pushTextWrapPos(ImGui.getFontSize() * 35.0f);
-            ImGui.textUnformatted(desc);
-            ImGui.popTextWrapPos();
-            ImGui.endTooltip();
-        }
-    }
-
-    private void sendVipChat() {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null) return;
-        // Пример отправки, замени под свой сервер
-        // mc.player.sendMessage(new StringTextComponent("/vip " + vipChat1.get()), Util.NIL_UUID);
-    }
-
-    private void resetSettings() {
-        antiBlockedPlayer.set(false);
-        shieldControl.set(false);
-        bunnyhop.set(false);
-        fastRun.set(false);
-        antiDebuff.set(false);
-        antiStun.set(false);
-        antiCrash.set(false);
-        fastConnect.set(false);
-        sbivAnim.set(false);
-        antiAFK.set(false);
-        adminSpec.set(false);
-        phone.set(false);
-        mask.set(false);
-        armor.set(false);
-        fisheye.set(false);
-        radius.set(12.0f);
-    }
-
-    // ===== ARZ THEME - порт Lua -> Java =====
+    // ===== ARZ THEME =====
     private void applyArzTheme() {
         ImGuiStyle style = ImGui.getStyle();
 
@@ -356,7 +246,6 @@ public class ImGuiScreen extends net.minecraft.client.gui.screen.Screen {
         style.setGrabRounding(1f);
         style.setWindowTitleAlign(0.5f, 0.5f);
 
-        // colors
         setCol(ImGuiCol.Text, 0.95f, 0.96f, 0.98f, 1.00f);
         setCol(ImGuiCol.TextDisabled, 0.29f, 0.29f, 0.29f, 1.00f);
         setCol(ImGuiCol.WindowBg, 0.14f, 0.14f, 0.14f, 1.00f);
@@ -384,12 +273,9 @@ public class ImGuiScreen extends net.minecraft.client.gui.screen.Screen {
         setCol(ImGuiCol.Header, 1.00f, 0.28f, 0.28f, 1.00f);
         setCol(ImGuiCol.HeaderHovered, 1.00f, 0.39f, 0.39f, 1.00f);
         setCol(ImGuiCol.HeaderActive, 1.00f, 0.21f, 0.21f, 1.00f);
-
-        // Разделители - СВЕТЛЕЕ, чтобы было видно
         setCol(ImGuiCol.Separator, 0.42f, 0.42f, 0.42f, 1.00f);
         setCol(ImGuiCol.SeparatorHovered, 0.60f, 0.28f, 0.28f, 1.00f);
         setCol(ImGuiCol.SeparatorActive, 1.00f, 0.28f, 0.28f, 1.00f);
-
         setCol(ImGuiCol.ResizeGrip, 1.00f, 0.28f, 0.28f, 1.00f);
         setCol(ImGuiCol.ResizeGripHovered, 1.00f, 0.39f, 0.39f, 1.00f);
         setCol(ImGuiCol.ResizeGripActive, 1.00f, 0.19f, 0.19f, 1.00f);
@@ -402,7 +288,6 @@ public class ImGuiScreen extends net.minecraft.client.gui.screen.Screen {
         setCol(ImGuiCol.PlotHistogramHovered, 1.00f, 0.18f, 0.18f, 1.00f);
         setCol(ImGuiCol.TextSelectedBg, 1.00f, 0.32f, 0.32f, 1.00f);
         setCol(ImGuiCol.ModalWindowDimBg, 0.26f, 0.26f, 0.26f, 0.60f);
-        // доп
         setCol(ImGuiCol.NavHighlight, 1.00f, 0.28f, 0.28f, 1.0f);
     }
 
