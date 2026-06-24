@@ -220,6 +220,10 @@ public class ImGuiScreen extends net.minecraft.client.gui.screen.Screen {
         if (ImGui.button("Сбросить счётчики", 180, 0)) {
             DupeLogger.resetCounters();
         }
+        ImGui.sameLine();
+        if (ImGui.button("Дамп скорборда", 180, 0)) {
+            DupeLogger.dumpScoreboard();
+        }
 
         ImGui.spacing(); ImGui.separator(); ImGui.spacing();
 
@@ -228,11 +232,11 @@ public class ImGuiScreen extends net.minecraft.client.gui.screen.Screen {
         ImGui.bulletText("Монеты из скорборда (ищет строку \"Монет: X\")");
         ImGui.bulletText("Задержку между получением изумруда и списанием монет");
         ImGui.spacing();
-        ImGui.textColored(1f, 0.9f, 0.3f, 1f, "Если задержка 200-600мс -> DUP WINDOW!");
+        ImGui.textColored(1f, 0.9f, 0.3f, 1f, "Если задержка 150-800мс -> DUP WINDOW!");
         ImGui.spacing();
         ImGui.textWrapped("Каждое событие пишется в чат с префиксом [Dupe]. Изумруды подсвечены зелёным.");
         ImGui.spacing();
-        ImGui.textDisabled("Включи логгирование перед покупкой в магазине, затем смотри чат.");
+        ImGui.textDisabled("Не находит монеты? Нажми \"Дамп скорборда\" - весь sidebar скопируется в буфер обмена, скинь мне.");
     }
 
     // ===== Helpers =====
